@@ -1,5 +1,3 @@
-# iris-axon-lab.github.io
-
 > Research notes, half-baked ideas. Probably overthought, definitely over-architected.
 
 Personal site of **Iris Shen** — Principal Scientist working on agentic AI systems,
