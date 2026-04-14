@@ -1,0 +1,693 @@
+---
+layout: null
+title: "Trace — Initial Version"
+date: 2026-04-12
+categories: [builders]
+description: "Builder's notes for Trace — a local-first witness agent that reads your AI conversation history and generates weekly narrative dispatches. Not a summary or dashboard, but a short-form piece of writing that surfaces patterns, tensions, and the distance between intention and action across time."
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trace · Builder's Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg:        #19170f;
+    --surface:   #211f15;
+    --surface2:  #2a271a;
+    --border:    rgba(255,255,255,0.08);
+    --text:      #f0ead8;
+    --muted:     rgba(240,234,216,0.42);
+    --amber:     #d4a96a;
+    --amber-dim: rgba(212,169,106,0.18);
+    --indigo:    #8b82f6;
+    --indigo-dim:rgba(139,130,246,0.15);
+    --green:     #5ecf9e;
+    --red-soft:  #e8896a;
+    --serif:     'DM Serif Display', Georgia, serif;
+    --body:      'Source Serif 4', Georgia, serif;
+    --mono:      'IBM Plex Mono', 'Courier New', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    font-weight: 300;
+    font-size: 19.5px;
+    line-height: 1.72;
+    min-height: 100vh;
+  }
+
+  /* Subtle grain overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    opacity: 0.5;
+  }
+
+  /* ─── Layout ─────────────────────────────── */
+  .page { position: relative; z-index: 1; max-width: 780px; margin: 0 auto; padding: 4rem 2rem 6rem; }
+
+  /* ─── Header ─────────────────────────────── */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 1.1rem;
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .eyebrow::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--amber), transparent);
+    opacity: 0.4;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.4rem, 6vw, 3.8rem);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+  }
+  h1 em { font-style: italic; color: var(--amber); }
+
+  .tagline {
+    font-size: 17px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-bottom: 2.6rem;
+  }
+
+  /* ─── Section headers ─────────────────────── */
+  h2 {
+    font-family: var(--serif);
+    font-size: 1.45rem;
+    font-weight: 400;
+    margin: 3.2rem 0 0.9rem;
+    display: flex; align-items: baseline; gap: 0.7rem;
+  }
+  h2 .n {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--amber);
+    letter-spacing: 0.12em;
+    padding: 2px 7px;
+    border: 1px solid var(--amber-dim);
+    border-radius: 3px;
+  }
+
+  /* ─── Body copy ───────────────────────────── */
+  p { margin-bottom: 1rem; color: rgba(240,234,216,0.86); }
+
+  a { color: var(--amber); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--text); }
+
+  /* ─── Status pill ────────────────────────── */
+  .status-bar {
+    display: flex; flex-wrap: wrap; gap: 0.6rem;
+    margin: 1.6rem 0 2rem;
+  }
+  .pill {
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.06em;
+    padding: 4px 12px; border-radius: 20px;
+    border: 1px solid;
+  }
+  .pill.green  { color: var(--green);   border-color: rgba(94,207,158,0.3); background: rgba(94,207,158,0.07); }
+  .pill.amber  { color: var(--amber);   border-color: rgba(212,169,106,0.3); background: rgba(212,169,106,0.07); }
+  .pill.indigo { color: var(--indigo);  border-color: rgba(139,130,246,0.3); background: rgba(139,130,246,0.07); }
+  .pill.muted  { color: var(--muted);   border-color: rgba(255,255,255,0.1); }
+
+  /* ─── Architecture diagram ───────────────── */
+  .arch {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 1.4rem 0 1rem;
+    font-family: var(--mono);
+  }
+  .arch-cell {
+    background: var(--surface);
+    padding: 1rem 0.9rem;
+    transition: background 0.2s;
+  }
+  .arch-cell:hover { background: var(--surface2); }
+  .arch-num  { font-size: 13px; color: var(--amber); letter-spacing: 0.1em; margin-bottom: 0.35rem; }
+  .arch-name { font-size: 16px; font-weight: 500; color: var(--text); margin-bottom: 0.5rem; }
+  .arch-subs { font-size: 13px; color: var(--muted); line-height: 1.55; }
+  .arch-subs span { display: block; }
+  .arch-subs span::before { content: '› '; color: var(--border); }
+  @media (max-width: 560px) {
+    .arch { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ─── Stack row ───────────────────────────── */
+  .stack-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+    margin: 1rem 0;
+  }
+  .stack-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 1rem 1.1rem;
+  }
+  .stack-card .label { font-family: var(--mono); font-size: 13px; color: var(--amber); letter-spacing: 0.1em; margin-bottom: 0.3rem; }
+  .stack-card .val   { font-family: var(--mono); font-size: 15px; color: var(--text); }
+  @media (max-width: 520px) { .stack-row { grid-template-columns: 1fr 1fr; } }
+
+  /* ─── Dispatch sample ─────────────────────── */
+  .dispatch-sample {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.8rem 1.6rem;
+    margin: 1.4rem 0; font-family: var(--body); font-size: 17px;
+    font-style: italic; color: rgba(240,234,216,0.72);
+    line-height: 1.8; position: relative;
+  }
+  .dispatch-sample::before {
+    content: '"';
+    font-family: var(--serif); font-size: 5rem; color: var(--amber);
+    opacity: 0.25; position: absolute; top: -0.5rem; left: 1rem;
+    line-height: 1;
+  }
+  .dispatch-meta {
+    margin-top: 0.9rem; font-family: var(--mono); font-size: 11.5px;
+    color: var(--muted); font-style: normal; letter-spacing: 0.06em;
+  }
+
+  /* ─── Tension Map section ─────────────────── */
+  .tension-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 2rem 1.8rem 1.6rem;
+    margin: 1.4rem 0;
+  }
+  .tc-header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.2rem; }
+  .tc-title  { font-family: var(--mono); font-size: 13.5px; letter-spacing: 0.1em; color: var(--text); }
+  .tc-sub    { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+
+  .controls {
+    display: flex; align-items: center; gap: 0.9rem;
+    margin-bottom: 1rem;
+  }
+  .btn-play {
+    background: var(--amber-dim); border: 1px solid rgba(212,169,106,0.35);
+    color: var(--amber); font-family: var(--mono); font-size: 12.5px;
+    padding: 4px 14px; border-radius: 4px; cursor: pointer; letter-spacing: 0.06em;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .btn-play:hover { background: rgba(212,169,106,0.28); }
+
+  input[type=range] {
+    flex: 1; -webkit-appearance: none; height: 2px;
+    background: var(--border); border-radius: 2px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--amber); cursor: pointer;
+    border: 2px solid var(--bg);
+  }
+  .wk-lbl { font-family: var(--mono); font-size: 13.5px; color: var(--amber); min-width: 28px; }
+
+  .meta-row {
+    display: flex; align-items: center; gap: 0.7rem;
+    margin-bottom: 0.8rem; min-height: 22px;
+  }
+  .event-lbl { font-family: var(--mono); font-size: 12.5px; color: var(--muted); flex: 1; font-style: italic; }
+  .tension-badge {
+    font-family: var(--mono); font-size: 12.5px; font-weight: 500;
+    padding: 2px 10px; border-radius: 20px; transition: background 0.3s, color 0.3s;
+  }
+
+  .legend-row {
+    display: flex; gap: 1.2rem; margin-bottom: 0.8rem; flex-wrap: wrap;
+  }
+  .leg { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+  .swatch { width: 12px; height: 12px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+
+  .chart-wrap { position: relative; height: 340px; }
+
+  .timeline-dots {
+    display: flex; justify-content: space-between; padding: 0.5rem 4px 0;
+  }
+  .td { font-family: var(--mono); font-size: 10.5px; color: var(--muted); cursor: pointer; transition: color 0.15s; }
+  .td:hover { color: var(--amber); }
+  .td.active { color: var(--amber); }
+
+  /* ─── Quote note ────────────────────────────── */
+  .note-block {
+    border-left: 2px solid var(--amber);
+    padding: 0.4rem 1.2rem;
+    margin: 1.6rem 0;
+    color: var(--muted);
+    font-style: italic;
+    font-size: 17px;
+  }
+
+  /* ─── What's next ────────────────────────── */
+  .next-list {
+    list-style: none;
+    margin: 0.8rem 0;
+  }
+  .next-list li {
+    display: flex; gap: 0.8rem; padding: 0.55rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 17px; color: rgba(240,234,216,0.8);
+    align-items: baseline;
+  }
+  .next-list li:last-child { border-bottom: none; }
+  .next-list .tag {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em;
+    padding: 2px 7px; border-radius: 3px; white-space: nowrap; flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .tag.now     { background: rgba(94,207,158,0.12);  color: var(--green);    border: 1px solid rgba(94,207,158,0.25); }
+  .tag.soon    { background: rgba(212,169,106,0.12); color: var(--amber);    border: 1px solid rgba(212,169,106,0.25); }
+  .tag.later   { background: rgba(139,130,246,0.12); color: var(--indigo);   border: 1px solid rgba(139,130,246,0.25); }
+
+  /* ─── Footer ─────────────────────────────── */
+  .footer {
+    margin-top: 4rem; padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted);
+  }
+  .footer a { color: var(--amber); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  /* ─── Fade-in on load ─────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .page > * { animation: fadeUp 0.6s ease both; }
+  .page > *:nth-child(1) { animation-delay: 0.05s; }
+  .page > *:nth-child(2) { animation-delay: 0.12s; }
+  .page > *:nth-child(3) { animation-delay: 0.18s; }
+  .page > *:nth-child(n+4) { animation-delay: 0.24s; }
+
+  /* === Site navigation === */
+  .site-nav { display:flex; align-items:center; justify-content:space-between; padding:13px 0 15px; border-bottom:1px solid var(--border); margin-bottom:36px; }
+  .site-nav-home { font-weight:500; font-size:15px; color:var(--amber); text-decoration:none; letter-spacing:-.01em; font-family:var(--mono); }
+  .site-nav-links { display:flex; gap:22px; }
+  .site-nav-links a { font-size:14px; color:var(--muted); text-decoration:none; font-family:var(--mono); }
+  .site-nav-links a:hover { color:var(--text); }
+  .site-nav-home:hover { opacity:.8; }
+  .site-footer-nav { margin-top:40px; padding-top:14px; border-top:1px solid var(--border); font-size:12px; color:var(--muted); text-align:center; font-family:var(--mono); }
+  .site-footer-nav a { color:var(--muted); text-decoration:none; margin:0 4px; }
+  .site-footer-nav a:hover { color:var(--text); }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="site-nav">
+  <a class="site-nav-home" href="/">Iris Axon Lab</a>
+  <div class="site-nav-links">
+    <a href="/">About</a>
+    <a href="/posts/">Writing</a>
+    <a href="/projects/">Projects</a>
+    <a href="/notes/">Notes</a>
+  </div>
+</nav>
+
+  <!-- Header -->
+  <div class="eyebrow">Builder's Notes &nbsp;·&nbsp; April 2026</div>
+
+  <h1>Trace:<br><em>a witness agent</em></h1>
+  <p class="tagline">local-first · longitudinal · narrative synthesis</p>
+
+  <!-- Status pills -->
+  <div class="status-bar">
+    <span class="pill green">✓ E2E skeleton running</span>
+    <span class="pill amber">⟳ Phase 1 — dispatch loop</span>
+    <span class="pill indigo">local Ollama · qwen3:14b</span>
+    <span class="pill muted">iris-axon-lab / trace</span>
+  </div>
+
+  <!-- What is this -->
+  <h2><span class="n">01</span> What Trace is</h2>
+  <p>
+    Most AI memory tools are built around retrieval — you ask, they fetch. Trace is built around a different question:
+    <em>do I feel witnessed?</em>
+  </p>
+  <p>
+    Trace reads your AI conversation history and ongoing notes, then generates a weekly narrative dispatch — not a summary, not a dashboard, but a short-form piece of writing that reflects your life back to you across time. It notices the tensions you're living inside, the patterns you haven't named yet, the distance between what you said you'd do and what you actually did.
+  </p>
+  <p>
+    It runs entirely local. No cloud, no subscription, no model that's also the product. The dispatch arrives as a self-contained HTML file in your output folder.
+  </p>
+
+  <div class="note-block">
+    The core design constraint: Trace should feel like a thoughtful friend who has been paying attention — not a therapist, not an analyst, and definitely not a productivity app.
+  </div>
+
+  <!-- Architecture -->
+  <h2><span class="n">02</span> Architecture</h2>
+  <p>Four layers, each independently evolvable:</p>
+
+  <div class="arch">
+    <div class="arch-cell">
+      <div class="arch-num">L1 · INPUT</div>
+      <div class="arch-name">Ingestion</div>
+      <div class="arch-subs">
+        <span>Claude export JSON</span>
+        <span>Voice note transcripts</span>
+        <span>Free-form text input</span>
+        <span>Conversation classifier</span>
+      </div>
+    </div>
+    <div class="arch-cell">
+      <div class="arch-num">L2 · PROCESS</div>
+      <div class="arch-name">Memory Processing</div>
+      <div class="arch-subs">
+        <span>Semantic chunking</span>
+        <span>Episodic extraction</span>
+        <span>Prospective flagging</span>
+        <span>Contradiction detection</span>
+      </div>
+    </div>
+    <div class="arch-cell">
+      <div class="arch-num">L3 · SYNTHESIZE</div>
+      <div class="arch-name">Narrative Engine</div>
+      <div class="arch-subs">
+        <span>Local LLM (Ollama)</span>
+        <span>Warm biographer prompt</span>
+        <span>Tension identification</span>
+        <span>Anti-flattery constraint</span>
+      </div>
+    </div>
+    <div class="arch-cell">
+      <div class="arch-num">L4 · OUTPUT</div>
+      <div class="arch-name">Dispatch Delivery</div>
+      <div class="arch-subs">
+        <span>HTML dispatch file</span>
+        <span>Markdown companion</span>
+        <span>Dispatch viewer UI</span>
+        <span>Email (Phase 2)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stack -->
+  <div class="stack-row">
+    <div class="stack-card"><div class="label">LLM BACKEND</div><div class="val">Ollama · qwen3:14b</div></div>
+    <div class="stack-card"><div class="label">LANGUAGE</div><div class="val">Python 3.11</div></div>
+    <div class="stack-card"><div class="label">OUTPUT FORMAT</div><div class="val">HTML + Markdown</div></div>
+  </div>
+
+  <!-- Current state -->
+  <h2><span class="n">03</span> Current state</h2>
+  <p>
+    The E2E skeleton is running. Feed it a Claude conversation export and a short personal context file (<code>synthesis_user.txt</code>) and it generates a dated dispatch. The pipeline covers all four layers — ingestion through HTML output — using a local Ollama server so nothing leaves the machine.
+  </p>
+  <p>
+    What works: the full loop, the dispatch viewer, the sample synthetic dataset (no real personal data required to try it). What's rough: the synthesis prompt needs iteration, the chunking logic is naive, and the dispatch aesthetic will evolve. That's the point of Phase 1 — get real dispatches into real hands.
+  </p>
+
+  <!-- Sample dispatch -->
+  <div class="dispatch-sample">
+    The tension you've been circling for six weeks isn't really about the job offer. It's about whether the version of yourself that wanted the job is still the version you trust. You keep saying "I'll know when the time is right" — but Trace notices you've said that fourteen times, and the window keeps moving.
+    <div class="dispatch-meta">— SYNTHETIC SAMPLE DISPATCH · Quill · Week 9 of 16</div>
+  </div>
+
+  <!-- Tension Map section -->
+  <h2><span class="n">04</span> The Tension Map</h2>
+  <p>
+    Every dispatch includes a Tension Map — a visualization of where the internal friction in your life currently lives. Four dimensions, tracked over time. The map animates through the weeks so you can watch the shape of a person's inner life actually move.
+  </p>
+  <p>
+    Below is a live demo using <strong>Quill</strong>, a fully synthetic persona: a systems thinker who spent 16 weeks navigating a leadership offer they ultimately declined — and then had to reckon with who they were after the decision.
+  </p>
+
+  <div class="tension-card">
+    <div class="tc-header">
+      <span class="tc-title">TENSION MAP · QUILL · 16-WEEK ARC</span>
+      <span class="tc-sub">synthetic demo · no real data</span>
+    </div>
+
+    <div class="controls">
+      <button class="btn-play" id="playBtn">▶ play</button>
+      <input type="range" id="slider" min="0" max="15" value="0" step="1">
+      <span class="wk-lbl" id="wkLbl">W1</span>
+    </div>
+
+    <div class="meta-row">
+      <span class="event-lbl" id="evLbl"></span>
+      <span class="tension-badge" id="tenBadge">tension 15</span>
+    </div>
+
+    <div class="legend-row">
+      <span class="leg"><span class="swatch" style="background:rgba(139,130,246,0.35);"></span> current week</span>
+      <span class="leg"><span class="swatch" style="background:rgba(255,255,255,0.08); border:1px dashed rgba(255,255,255,0.2);"></span> week 1 baseline</span>
+    </div>
+
+    <div class="chart-wrap">
+      <canvas id="radarChart" role="img" aria-label="Animated radar chart showing Quill's psyche map across 4 dimensions over 16 weeks. Peak tension at week 8: Partner confrontation."></canvas>
+    </div>
+
+    <div class="timeline-dots" id="weekDots"></div>
+  </div>
+
+  <p style="font-size: 16px; color: var(--muted); margin-top: 0.5rem;">
+    Four axes: <strong style="color:var(--text)">Career Drive</strong> (ambition / output energy) · <strong style="color:var(--text)">Relational Presence</strong> (groundedness in relationships) · <strong style="color:var(--text)">Identity Continuity</strong> (alignment between past and present self) · <strong style="color:var(--text)">Wellbeing</strong> (embodied baseline). Tension score is a composite of divergence across these dimensions.
+  </p>
+
+  <!-- How the tension map works as narrative signal -->
+  <div class="note-block">
+    The shape shift matters more than any individual score. Quill's radar collapses inward at peak tension — high Career Drive pulling everything else out of balance — then slowly widens and rounds again in the recovery arc. That shape is the story.
+  </div>
+
+  <!-- What's next -->
+  <h2><span class="n">05</span> What's next</h2>
+
+  <ul class="next-list">
+    <li>
+      <span class="tag now">now</span>
+      Iterate on the synthesis prompt — close the gap between "summary with flair" and genuine witnessing. The dispatch tone is the product.
+    </li>
+    <li>
+      <span class="tag now">now</span>
+      Input filtering: separate the "me-centric" personal traces from technical/work knowledge streams before synthesis, so the witness layer stays clean.
+    </li>
+    <li>
+      <span class="tag soon">soon</span>
+      Wire the Tension Map to real dispatch output — auto-generate the four-dimension scores from the narrative synthesis pass rather than hardcoding.
+    </li>
+    <li>
+      <span class="tag soon">soon</span>
+      Fine-tune a small model (Qwen 2.5 3B + QLoRA) on longitudinal personal memory traces — the <code>iris-ft-lab</code> companion project. Memory-as-policy rather than memory-as-retrieval.
+    </li>
+    <li>
+      <span class="tag later">later</span>
+      Email delivery for Phase 2 — the dispatch arrives in your inbox Friday morning, like a letter from your past self.
+    </li>
+    <li>
+      <span class="tag later">later</span>
+      Evaluate whether MiniMax's long-context architecture (native 1M token window) changes what's possible in the synthesis layer — relevant because of their attention mechanism design.
+    </li>
+  </ul>
+
+  <!-- Why this -->
+  <h2><span class="n">06</span> Why I built this</h2>
+  <p>
+    The real motivation is epistemically honest: most AI products optimize for the user's stated preferences. Trace is designed to notice the gap between stated and revealed — what you say you value vs. what your traces show you actually doing. That gap is where growth lives.
+  </p>
+  <p>
+    As a researcher who spent years building knowledge graph infrastructure at scale, I kept noticing that the hardest knowledge problem wasn't retrieval. It was <em>prospective memory</em> — remembering to act on what you already know, in the right context, at the right moment. Trace is the personal version of that problem.
+  </p>
+  <p>
+    It's also just a project I wanted to exist and couldn't find. So here we are.
+  </p>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span>iris-axon-lab &nbsp;·&nbsp; April 2026 &nbsp;·&nbsp; early / public</span>
+    <span>
+      <a href="https://github.com/iris-axon-lab/trace" target="_blank">github.com/iris-axon-lab/trace</a>
+    </span>
+  </div>
+
+</div><!-- .page -->
+
+<script>
+// ── Data: Quill's 16-week arc ──────────────────────────────────────────────
+const DATA = [
+  {w:1,  c:55, r:60, id:80, wb:72, t:15},
+  {w:2,  c:62, r:58, id:78, wb:70, t:18},
+  {w:3,  c:65, r:55, id:76, wb:68, t:24},
+  {w:4,  c:68, r:52, id:74, wb:65, t:31},
+  {w:5,  c:78, r:45, id:65, wb:58, t:51},
+  {w:6,  c:82, r:40, id:60, wb:50, t:63},
+  {w:7,  c:85, r:35, id:55, wb:44, t:74},
+  {w:8,  c:88, r:28, id:42, wb:36, t:89},
+  {w:9,  c:80, r:25, id:35, wb:30, t:88},
+  {w:10, c:72, r:30, id:30, wb:33, t:77},
+  {w:11, c:55, r:38, id:28, wb:38, t:53},
+  {w:12, c:48, r:45, id:38, wb:46, t:34},
+  {w:13, c:50, r:52, id:52, wb:55, t:26},
+  {w:14, c:52, r:60, id:62, wb:62, t:27},
+  {w:15, c:55, r:62, id:68, wb:66, t:22},
+  {w:16, c:58, r:65, id:72, wb:70, t:20},
+];
+
+const EVENTS = [
+  {w:2,  lbl:'New project surfaces',       txt:'Stayed late three nights. Felt alive again.'},
+  {w:5,  lbl:'Leadership offer arrives',   txt:'Everything they wanted me to want. Why does it feel hollow?'},
+  {w:8,  lbl:'Relational confrontation',   txt:'Someone who knows me said: I don\'t recognize you anymore.'},
+  {w:11, lbl:'The decision',               txt:'Declined the offer. Immediately wanted to take it back. Or did I?'},
+  {w:14, lbl:'Something settling',         txt:'Started running again. Wrote something that surprised me.'},
+];
+
+// ── Tension color ──────────────────────────────────────────────────────────
+function tensionColor(t) {
+  if (t < 40) return { bg: 'rgba(94,207,158,0.18)',   txt: '#5ecf9e' };
+  if (t < 65) return { bg: 'rgba(212,169,106,0.2)',   txt: '#d4a96a' };
+  return            { bg: 'rgba(232,137,106,0.2)',    txt: '#e8896a' };
+}
+
+// ── Build Chart ────────────────────────────────────────────────────────────
+const LABELS  = ['Career\nDrive', 'Relational\nPresence', 'Identity\nContinuity', 'Wellbeing'];
+const BASELINE = [DATA[0].c, DATA[0].r, DATA[0].id, DATA[0].wb];
+
+const ctx = document.getElementById('radarChart').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'radar',
+  data: {
+    labels: LABELS,
+    datasets: [
+      {
+        label: 'current week',
+        data: BASELINE.slice(),
+        backgroundColor: 'rgba(139,130,246,0.15)',
+        borderColor: '#8b82f6',
+        borderWidth: 2,
+        pointBackgroundColor: '#8b82f6',
+        pointBorderColor: '#19170f',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+      },
+      {
+        label: 'week 1 baseline',
+        data: BASELINE,
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        borderColor: 'rgba(255,255,255,0.15)',
+        borderWidth: 1,
+        borderDash: [5,4],
+        pointRadius: 0,
+        pointHoverRadius: 0,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 450, easing: 'easeInOutQuart' },
+    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+    scales: {
+      r: {
+        min: 0, max: 100,
+        ticks: {
+          stepSize: 25,
+          display: false,
+        },
+        grid: {
+          color: 'rgba(255,255,255,0.07)',
+          lineWidth: 1,
+        },
+        angleLines: {
+          color: 'rgba(255,255,255,0.06)',
+        },
+        pointLabels: {
+          font: { family: "'IBM Plex Mono', monospace", size: 11 },
+          color: 'rgba(240,234,216,0.55)',
+          padding: 10,
+        }
+      }
+    }
+  }
+});
+
+// ── Timeline dots ─────────────────────────────────────────────────────────
+const dotsEl = document.getElementById('weekDots');
+DATA.forEach((d, i) => {
+  const span = document.createElement('span');
+  span.className = 'td' + (i === 0 ? ' active' : '');
+  span.textContent = 'W' + d.w;
+  span.title = EVENTS.find(e => e.w === d.w)?.lbl || '';
+  span.onclick = () => { if (playing) stop(); goTo(i); };
+  dotsEl.appendChild(span);
+});
+
+// ── State ─────────────────────────────────────────────────────────────────
+let idx = 0, playing = false, timer = null;
+
+function goTo(i) {
+  idx = i;
+  const d = DATA[i];
+  chart.data.datasets[0].data = [d.c, d.r, d.id, d.wb];
+  chart.update();
+
+  document.getElementById('slider').value = i;
+  document.getElementById('wkLbl').textContent = 'W' + d.w;
+
+  const ev = EVENTS.find(e => e.w === d.w);
+  document.getElementById('evLbl').textContent = ev ? '"' + ev.lbl + '"' : '';
+
+  const c = tensionColor(d.t);
+  const badge = document.getElementById('tenBadge');
+  badge.textContent = 'tension ' + d.t;
+  badge.style.background = c.bg;
+  badge.style.color = c.txt;
+
+  // Update active dot
+  document.querySelectorAll('.td').forEach((el, j) => {
+    el.classList.toggle('active', j === i);
+  });
+}
+
+function start() {
+  playing = true;
+  document.getElementById('playBtn').textContent = '⏸ pause';
+  if (idx >= 15) idx = -1;
+  timer = setInterval(() => {
+    idx++;
+    goTo(idx);
+    if (idx >= 15) stop();
+  }, 650);
+}
+
+function stop() {
+  playing = false;
+  clearInterval(timer);
+  document.getElementById('playBtn').textContent = '▶ play';
+}
+
+document.getElementById('slider').oninput = e => {
+  if (playing) stop();
+  goTo(+e.target.value);
+};
+document.getElementById('playBtn').onclick = () => playing ? stop() : start();
+
+goTo(0);
+</script>
+
+{% include site-footer.html %}
+
+</body>
+</html>

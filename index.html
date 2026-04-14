@@ -1,0 +1,387 @@
+---
+layout: null
+title: "Iris Shen"
+permalink: /
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iris Shen</title>
+<meta name="description" content="Researcher, scientist, architect, builder, thinker. Working on agentic AI systems, memory architecture, and the question of how systems know what they know.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Martian+Mono:wght@300;400;500&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #f5f2eb;
+    --bg2:     #ede9df;
+    --ink:     #1c1a12;
+    --ink2:    rgba(28,26,18,0.55);
+    --ink3:    rgba(28,26,18,0.32);
+    --accent:  #8b4513;
+    --accent2: rgba(139,69,19,0.12);
+    --rule:    rgba(28,26,18,0.12);
+    --serif:   'Cormorant Garamond', Georgia, serif;
+    --mono:    'Martian Mono', 'Courier New', monospace;
+    --body:    'Lora', Georgia, serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.75;
+    min-height: 100vh;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.028'/%3E%3C/svg%3E");
+  }
+
+  strong { font-weight:400; font-style:italic; }
+
+  /* Site nav — consistent with all other pages */
+  .site-nav { display:flex; align-items:center; justify-content:space-between; padding:14px 0 16px; border-bottom:1px solid var(--rule); margin-bottom:40px; }
+  .site-nav-home { font-weight:400; font-size:17px; font-family:var(--serif); color:var(--ink); text-decoration:none; letter-spacing:.01em; }
+  .site-nav-links { display:flex; gap:22px; }
+  .site-nav-links a { font-size:14px; color:var(--ink2); text-decoration:none; }
+  .site-nav-links a:hover, .site-nav-home:hover { color:var(--accent); text-decoration:underline; }
+
+  /* Page */
+  .page { max-width: 860px; margin: 0 auto; padding: 0 2.5rem; }
+
+  /* Hero */
+  .hero {
+    padding: 3rem 0 4.5rem;
+    position: relative;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; left: -2.5rem; top: 8rem; bottom: 3rem;
+    width: 2px;
+    background: linear-gradient(180deg, var(--accent) 0%, transparent 100%);
+    opacity: 0.35;
+  }
+
+  .hero-name {
+    font-family: var(--serif);
+    font-size: clamp(4rem, 10vw, 7.5rem);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.0;
+    color: var(--ink);
+    margin-bottom: 1.6rem;
+    white-space: nowrap;
+    animation: fadeUp 0.7s 0.0s ease both;
+  }
+  .hero-name .first { font-style: normal; font-weight: 300; margin-right: 0.18em; }
+  .hero-name .last  { font-style: italic; color: var(--accent); font-weight: 400; }
+
+  .identity-row {
+    display: flex; flex-wrap: wrap; gap: 0.4rem 0;
+    margin-bottom: 1.0rem;
+    animation: fadeUp 0.7s 0.12s ease both;
+  }
+  .id-word { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink2); }
+  .id-sep  { font-family: var(--mono); font-size: 12px; color: var(--accent); opacity: 0.6; padding: 0 0.5rem; }
+
+  .hero-note {
+    font-family: var(--mono); font-size: 13px; font-style: italic;
+    color: var(--ink2); letter-spacing: 0.03em;
+    margin-bottom: 3.2rem;
+    animation: fadeUp 0.7s 0.18s ease both;
+  }
+
+  .hero-lede {
+    max-width: 560px;
+    font-family: var(--body); font-size: 17px; font-style: italic;
+    color: var(--ink2); line-height: 1.7;
+    border-left: 2px solid var(--accent);
+    padding-left: 1.2rem;
+    animation: fadeUp 0.7s 0.22s ease both;
+  }
+
+  /* Sections */
+  section { padding: 3.2rem 0; border-top: 1px solid var(--rule); }
+
+  .section-label {
+    font-family: var(--mono); font-size: 13px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: 1.6rem; display: block;
+  }
+
+  /* Question block */
+  .question-block {
+    background: var(--bg2);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 2rem 2.2rem;
+    margin: 2rem 0 0;
+  }
+  .question-block .q-text {
+    font-family: var(--serif); font-size: clamp(1.3rem, 3vw, 1.85rem);
+    font-style: italic; font-weight: 300; color: var(--ink);
+    line-height: 1.3; margin-bottom: 0.7rem;
+  }
+  .question-block .q-caption {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em;
+    color: var(--ink3); text-transform: uppercase;
+  }
+
+  /* Habitus */
+  .habitus-text { font-size: 17px; color: rgba(28,26,18,0.8); line-height: 1.78; max-width: 660px; }
+  .habitus-text p { margin-bottom: 0.9rem; }
+  .habitus-text p:last-child { margin-bottom: 0; }
+  .habitus-text strong { color: var(--ink); font-weight: 400; font-style: italic; }
+
+  /* Careers */
+  .careers { display: flex; flex-direction: column; }
+  .career-item {
+    display: grid; grid-template-columns: 130px 1fr;
+    gap: 0 2rem; padding: 1.6rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .career-item:last-child { border-bottom: none; }
+  .career-era {
+    font-family: var(--mono); font-size: 13px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink3); padding-top: 4px;
+  }
+  .career-title {
+    font-family: var(--serif); font-size: 1.45rem; font-weight: 400;
+    color: var(--ink); margin-bottom: 0.4rem; line-height: 1.2;
+  }
+  .career-desc { font-size: 16px; color: var(--ink2); line-height: 1.68; }
+
+  /* Thinking grid */
+  .thinking-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1px; background: var(--rule);
+    border: 1px solid var(--rule); border-radius: 4px; overflow: hidden;
+  }
+  .thinking-cell { background: var(--bg); padding: 1.3rem 1.4rem; transition: background 0.2s; }
+  .thinking-cell:hover { background: var(--bg2); }
+  .thinking-cell .q {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem;
+  }
+  .thinking-cell p { font-size: 15px; color: var(--ink2); line-height: 1.6; margin: 0; }
+  @media (max-width: 520px) { .thinking-grid { grid-template-columns: 1fr; } }
+
+  /* Artifacts */
+  .artifacts { display: flex; flex-direction: column; }
+  .artifact-row {
+    display: flex; align-items: baseline; gap: 1.5rem;
+    padding: 1.1rem 0; border-bottom: 1px solid var(--rule);
+    text-decoration: none; color: inherit;
+    transition: padding-left 0.2s;
+  }
+  .artifact-row:last-child { border-bottom: none; }
+  .artifact-row:hover { padding-left: 0.5rem; }
+  .artifact-tag {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--accent);
+    background: var(--accent2); padding: 3px 8px; border-radius: 3px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .artifact-name { font-family: var(--serif); font-size: 1.15rem; color: var(--ink); }
+  .artifact-desc { font-size: 13px; color: var(--ink2); margin-left: auto; text-align: right; }
+  @media (max-width: 600px) { .artifact-desc { display: none; } }
+
+  /* Elsewhere */
+  .elsewhere { display: flex; gap: 2.5rem; flex-wrap: wrap; }
+  .elsewhere a {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink2); text-decoration: none;
+    border-bottom: 1px solid var(--rule); padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .elsewhere a:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* Site footer nav (consistent with other pages) */
+  .site-footer-nav {
+    padding: 1.2rem 0 0.5rem;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 10px; color: var(--ink3);
+    letter-spacing: 0.08em; text-align: center;
+  }
+  .site-footer-nav a { color: var(--ink3); text-decoration: none; margin: 0 6px; }
+  .site-footer-nav a:hover { color: var(--accent); }
+
+  /* Footer */
+  footer {
+    padding: 2rem 0 3rem;
+    border-top: 1px solid var(--rule);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 0.8rem;
+    font-family: var(--mono); font-size: 10px; color: var(--ink3); letter-spacing: 0.06em;
+  }
+  footer a { color: var(--ink3); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+
+  /* Animations — CSS only, no JS required for visibility */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .question-block { animation: fadeUp 0.6s 0.3s ease both; }
+  section         { animation: fadeUp 0.6s 0.4s ease both; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .page { padding: 0 1.5rem; }
+    .hero { padding: 3rem 0 3rem; }
+    .hero::before { display: none; }
+    .career-item { grid-template-columns: 1fr; gap: 0.2rem; }
+    .career-era { padding-bottom: 0.3rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+<nav class="site-nav">
+  <a class="site-nav-home" href="/">Iris Axon Lab</a>
+  <div class="site-nav-links">
+    <a href="/">About</a>
+    <a href="/posts/">Writing</a>
+    <a href="/projects/">Projects</a>
+    <a href="/notes/">Notes</a>
+  </div>
+</nav>
+
+  <!-- Hero -->
+  <div class="hero">
+    <h1 class="hero-name">
+      <span class="first">Iris</span><span class="last">Shen</span>
+    </h1>
+
+    <div class="identity-row">
+      <span class="id-word">Learner</span><span class="id-sep">·</span>
+      <span class="id-word">Builder</span><span class="id-sep">·</span>
+      <span class="id-word">Thinker</span>
+    </div>
+
+    <p class="hero-note">Research notes, half-baked ideas. Probably overthought, definitely over-architected.</p>
+
+    <p class="hero-lede">
+      I build things I want to exist — systems that reason over time, agents that know what they know, tools that make thinking visible. Three careers in, still driven by the same underlying question.
+    </p>
+  </div>
+
+  <!-- The question -->
+  <div class="question-block">
+    <div class="q-text">"How do systems know what they know — and act reliably on it?"</div>
+    <div class="q-caption">The thread across operations research → knowledge graphs → agentic AI</div>
+  </div>
+
+  <!-- Who I am -->
+  <section id="about">
+    <span class="section-label">Who I am</span>
+    <div class="habitus-text">
+      <p>
+        I am energized by the intersection of <strong>rigorous system design</strong> and <strong>genuine epistemic curiosity</strong> — the places where the formal and the philosophical press against each other productively. I think in frameworks but distrust frameworks that stop being useful. I care as much about the shape of a problem as its solution.
+      </p>
+      <p>
+        I'm drawn to work that operates at <strong>multiple scales simultaneously</strong> — individual inference, orchestration logic, memory architecture — because the interesting bugs live in the seams between levels, not inside any single layer.
+      </p>
+      <p>
+        Outside the technical: classical piano, running, an ongoing project of understanding my own habitus. I'm bilingual — English and Mandarin — with deep fluency in both the Western and Chinese AI research ecosystems.
+      </p>
+    </div>
+  </section>
+
+  <!-- Three careers -->
+  <section id="career">
+    <span class="section-label">Three careers, one question</span>
+    <div class="careers">
+      <div class="career-item">
+        <div class="career-era">Now</div>
+        <div>
+          <div class="career-title">Agentic AI Infrastructure</div>
+          <div class="career-desc">Building the runtime layer for agentic systems at scale — memory and context management, tool orchestration, planning and reasoning, long-running task lifecycle. Tens of millions of users. The hard problems are not the models. They are the memory, the orchestration, and the failure modes nobody planned for.</div>
+        </div>
+      </div>
+      <div class="career-item">
+        <div class="career-era">Before</div>
+        <div>
+          <div class="career-title">Knowledge Graphs at Microsoft Research</div>
+          <div class="career-desc">Built billion-scale academic knowledge graphs adopted by the OECD and the Stanford AI Index. Learned that knowledge representation is never just a data problem — it is always also a question of what you think knowledge is.</div>
+        </div>
+      </div>
+      <div class="career-item">
+        <div class="career-era">Before that</div>
+        <div>
+          <div class="career-title">Operations Research</div>
+          <div class="career-desc">PhD from USC. Learned that the best model is the one that actually gets used — and that the gap between a formally correct solution and a useful one is almost always a design problem, not a math problem.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- What I think about -->
+  <section id="thinking">
+    <span class="section-label">What I think about</span>
+    <div class="thinking-grid">
+      <div class="thinking-cell">
+        <div class="q">Memory</div>
+        <p>Memory as a first-class architectural primitive — not a bolt-on. Prospective memory as a steerability surface. The four-tier taxonomy: semantic, episodic, procedural, prospective.</p>
+      </div>
+      <div class="thinking-cell">
+        <div class="q">Epistemic Integrity</div>
+        <p>How do long-running agentic tasks maintain reliable self-knowledge across the knowing / doing / deciding axes? What breaks when sessions end and agents restart?</p>
+      </div>
+      <div class="thinking-cell">
+        <div class="q">Evaluation</div>
+        <p>Evaluation frameworks that don't lie to you. The difference between a metric that feels good and a grader that catches real failure modes.</p>
+      </div>
+      <div class="thinking-cell">
+        <div class="q">Orchestration</div>
+        <p>Why orchestration is harder than it looks — tool quality, skill triggering, the compound failure rate of pipelines nobody stress-tested end to end.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Projects -->
+  <section id="projects">
+    <span class="section-label">Things I built that you can try</span>
+    <div class="artifacts">
+      <a class="artifact-row" href="https://github.com/iris-axon-lab/trace" target="_blank">
+        <span class="artifact-tag">Project</span>
+        <span class="artifact-name">Trace — a longitudinal witness agent</span>
+        <span class="artifact-desc">local-first · Ollama · qwen3:14b</span>
+      </a>
+      <a class="artifact-row" href="/writing/2026/04/12/agentic-runtime-layer.html">
+        <span class="artifact-tag">Writing</span>
+        <span class="artifact-name">Agent Epistemic Integrity</span>
+        <span class="artifact-desc">framework paper · session-based vs. always-on</span>
+      </a>
+      <a class="artifact-row" href="/notes">
+        <span class="artifact-tag">Notes</span>
+        <span class="artifact-name">Research &amp; Learner's Notes</span>
+        <span class="artifact-desc">memory architecture · frontier AI · orchestration</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact">
+    <span class="section-label">Elsewhere</span>
+    <div class="elsewhere">
+      <a href="https://github.com/iris-axon-lab" target="_blank">GitHub</a>
+      <a href="mailto:iris.shen.ai@gmail.com">iris.shen.ai@gmail.com</a>
+    </div>
+  </section>
+
+  <footer>
+    <span>© Iris Shen · Written content, all rights reserved</span>
+    <span>Code: MIT · Static site · <a href="https://github.com/iris-axon-lab" target="_blank">iris-axon-lab</a></span>
+  </footer>
+
+  {% include site-footer.html %}
+
+</div>
+</body>
+</html>
