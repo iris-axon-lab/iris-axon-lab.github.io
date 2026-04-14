@@ -1,0 +1,307 @@
+---
+layout: null
+title: "Two-Stage Agentic Memory Generation Architecture"
+date: 2026-02-01
+categories: [writing]
+description: "A two-stage pipeline for agentic memory — async generation from task traces, then inference-time selection. Addresses the open problem of sourcing memory from non-human-bot interactions: tool call results (Slack threads, code commits, API responses), autonomous task execution traces, and multi-agent coordination logs — where signal density is far lower than in conversation transcripts."
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two-Stage Agentic Memory Generation Architecture</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background: #fff; color: #1a1a1a; font-size: 16px;
+    line-height: 1.75; padding: 52px 24px 88px;
+  }
+  .article { max-width: 760px; margin: 0 auto; }
+
+  .header { border-bottom: 2.5px solid #1a1a1a; padding-bottom: 22px; margin-bottom: 38px; }
+  .eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #999; margin-bottom: 12px; }
+  h1 { font-size: 29.5px; font-weight: 700; line-height: 1.2; letter-spacing: -.02em; margin-bottom: 11px; }
+  .subtitle { font-size: 16px; color: #555; line-height: 1.6; margin-bottom: 18px; max-width: 620px; }
+  .meta { font-size: 12.5px; color: #bbb; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .meta-tag { display: inline-block; font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; background: #f0f0ee; color: #666; padding: 2px 8px; border-radius: 4px; }
+
+  p { margin-bottom: 18px; color: #2a2a2a; }
+  .abstract { background: #f9f9f7; border: 1px solid #e4e4e0; border-radius: 8px; padding: 18px 22px; margin-bottom: 36px; font-size: 15.5px; line-height: 1.75; color: #333; }
+  .abstract-label { font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #999; margin-bottom: 8px; }
+
+  .section { margin-top: 44px; margin-bottom: 18px; }
+  .section-label { display: inline-block; background: #1a1a1a; color: #fff; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 3px 10px; border-radius: 3px; margin-bottom: 9px; }
+  h2 { font-size: 19.5px; font-weight: 700; letter-spacing: -.01em; line-height: 1.3; margin-bottom: 14px; }
+
+  hr.soft { border: none; border-top: 1px solid #efefef; margin: 40px 0; }
+
+  /* Architecture diagram — two stage */
+  .arch-diagram {
+    margin: 28px 0 32px;
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr;
+    gap: 0;
+    align-items: stretch;
+  }
+  .stage-box {
+    border: 1px solid #e0e0de;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .stage-header { padding: 12px 18px; font-size: 13.5px; font-weight: 700; }
+  .stage-1 .stage-header { background: #EEF6FF; color: #1a4a8a; border-bottom: 1px solid #c8dff5; }
+  .stage-2 .stage-header { background: #EDFAF3; color: #145c33; border-bottom: 1px solid #b0dfc4; }
+  .stage-meta { font-size: 11.5px; font-weight: 400; opacity: .7; display: block; margin-top: 2px; }
+  .stage-body { padding: 14px 18px; font-size: 14.5px; color: #333; line-height: 1.65; }
+  .stage-items { list-style: none; padding: 0; margin: 8px 0 0; }
+  .stage-items li { display: flex; gap: 8px; margin-bottom: 7px; font-size: 13.5px; line-height: 1.5; }
+  .stage-items li::before { content: "→"; color: #888; flex-shrink: 0; margin-top: 1px; }
+  .arch-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20.5px;
+    color: #bbb;
+  }
+
+  /* Economics callout */
+  .economics {
+    background: #f3f0ff;
+    border: 1px solid #c8bfff;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 24px 0;
+  }
+  .economics-label { font-size: 11.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: #4a1fa8; margin-bottom: 8px; }
+  .econ-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 12px; }
+  @media (max-width: 520px) { .econ-grid { grid-template-columns: 1fr; } .arch-diagram { grid-template-columns: 1fr; } .arch-arrow { transform: rotate(90deg); height: 32px; } }
+  .econ-cell { text-align: center; }
+  .econ-num { font-size: 25px; font-weight: 700; color: #4a1fa8; display: block; line-height: 1.2; }
+  .econ-label { font-size: 12.5px; color: #555; line-height: 1.4; margin-top: 3px; }
+
+  /* Source comparison */
+  .source-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 22px 0 28px; }
+  @media (max-width: 520px) { .source-compare { grid-template-columns: 1fr; } }
+  .source-card { border-radius: 9px; border: 1px solid #e4e4e0; padding: 16px 18px; }
+  .source-card.human { background: #f7fbff; border-color: #c8dff5; }
+  .source-card.agent { background: #fff8f0; border-color: #f5d49b; }
+  .source-label { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+  .source-card.human .source-label { color: #1a4a8a; }
+  .source-card.agent .source-label { color: #7a3e00; }
+  .source-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .source-card p { font-size: 13.5px; color: #444; margin-bottom: 0; line-height: 1.6; }
+
+  /* Callout */
+  .callout { background: #f5f5f3; border-left: 3px solid #1a1a1a; border-radius: 0 6px 6px 0; padding: 14px 18px; margin: 20px 0; font-size: 15px; line-height: 1.7; color: #333; }
+
+  /* Design prescriptions */
+  .prescriptions { display: flex; flex-direction: column; gap: 14px; margin: 20px 0; }
+  .prescription { border-left: 3px solid #e0e0e0; padding-left: 16px; }
+  .prescription h3 { font-size: 15.5px; font-weight: 700; margin-bottom: 5px; color: #1a1a1a; }
+  .prescription p { font-size: 15px; margin-bottom: 0; color: #333; }
+  .prescription:nth-child(1) { border-left-color: #3b82f6; }
+  .prescription:nth-child(2) { border-left-color: #22c55e; }
+  .prescription:nth-child(3) { border-left-color: #f59e0b; }
+
+  .footer { margin-top: 52px; padding-top: 16px; border-top: 1px solid #eaeaea; font-size: 12.5px; color: #bbb; line-height: 1.9; }
+  .footer a { color: #999; text-decoration: underline; }
+
+  /* === Site navigation === */
+  .site-nav { display:flex; align-items:center; justify-content:space-between; padding:14px 0 16px; border-bottom:1px solid #e0e0dc; margin-bottom:40px; }
+  .site-nav-home { font-weight:600; font-size:15px; font-family:Georgia,serif; color:#1a1a1a; text-decoration:none; letter-spacing:-.01em; }
+  .site-nav-links { display:flex; gap:22px; }
+  .site-nav-links a { font-size:14px; color:#777; text-decoration:none; }
+  .site-nav-links a:hover, .site-nav-home:hover { color:#1a1a1a; text-decoration:underline; }
+  .site-footer-nav { margin-top:36px; padding-top:14px; border-top:1px solid #eaeaea; font-size:12px; color:#bbb; text-align:center; }
+  .site-footer-nav a { color:#999; text-decoration:none; margin:0 4px; }
+  .site-footer-nav a:hover { color:#555; }
+</style>
+</head>
+<body>
+<article class="article">
+<nav class="site-nav">
+  <a class="site-nav-home" href="/">Iris Axon Lab</a>
+  <div class="site-nav-links">
+    <a href="/">About</a>
+    <a href="/posts/">Writing</a>
+    <a href="/projects/">Projects</a>
+    <a href="/notes/">Notes</a>
+  </div>
+</nav>
+
+<header class="header">
+  <div class="eyebrow">Systems Design · Agentic Memory</div>
+  <h1>Two-Stage Agentic Memory Generation Architecture</h1>
+  <p class="subtitle">Why separating memory generation from retrieval is an economic and epistemic necessity — and where the real engineering challenge lies.</p>
+  <div class="meta">
+    <span>March 2026</span>
+    <span class="meta-tag">Memory Architecture</span>
+    <span class="meta-tag">Enterprise AI</span>
+    <span class="meta-tag">Systems Design</span>
+  </div>
+</header>
+
+<div class="abstract">
+  <div class="abstract-label">Abstract</div>
+  The dominant pattern in production agentic memory systems — retrieve relevant context at query time, inject into the prompt — is architecturally fragile: it runs expensive reasoning inside the inference latency budget, treats generation and selection as one operation, and degrades under query volume. This paper argues for a two-stage separation: an asynchronous, query-independent generation phase that produces standing memory representations, and an inference-time selection phase that assembles context from those representations. The economic structure is fundamentally different — one generation run amortizes across many downstream queries — and the architecture is model-forward by construction: as foundation models improve, so does generation quality without re-engineering the retrieval layer. The paper further identifies the agentic retrieval problem for non-conversational artifact streams as the genuinely open frontier in memory generation, distinct from the well-studied conversational memory case.
+</div>
+
+<div class="section">
+  <div class="section-label">The Problem</div>
+  <h2>What's Wrong with Retrieve-at-Query-Time</h2>
+</div>
+
+<p>The retrieve-at-query-time pattern dominates production memory systems for pragmatic reasons: it is simple to implement, it handles the conversational case adequately, and it places the memory burden entirely on the retrieval layer, which is a well-studied problem. For session-based assistants handling a bounded conversation, it is often sufficient.</p>
+
+<p>It fails in three ways as systems scale:</p>
+
+<p><strong>Latency budget:</strong> Retrieving and reasoning over raw source material — emails, documents, prior conversations — inside the inference latency budget means the user waits for memory assembly on every query. The expensive work happens in the most latency-sensitive window.</p>
+
+<p><strong>Signal density:</strong> Raw source material is low-signal-density. Most content in an email thread, a document, or a conversation transcript is not relevant to any given query. Retrieval over raw sources requires the model to do significant filtering and synthesis work at query time — work that is duplicated on every subsequent query that touches the same source.</p>
+
+<p><strong>No amortization:</strong> If the same source material is relevant to 50 downstream queries, the retrieve-at-query-time pattern pays the synthesis cost 50 times. The two-stage architecture pays it once.</p>
+
+<hr class="soft">
+<div class="section">
+  <div class="section-label">The Architecture</div>
+  <h2>Two Stages with Distinct Responsibilities</h2>
+</div>
+
+<div class="arch-diagram">
+  <div class="stage-box stage-1">
+    <div class="stage-header">
+      Stage 1 — Generation
+      <span class="stage-meta">Async · Query-independent · Amortized</span>
+    </div>
+    <div class="stage-body">
+      Runs offline, triggered by new source events (new email, completed task, meeting transcript, tool execution record). Produces standing memory representations — structured entries tagged by memory tier — without knowing which queries they will serve.
+      <ul class="stage-items">
+        <li>Reads raw source material from all available streams</li>
+        <li>Extracts and structures entries by memory tier (semantic / episodic / procedural / prospective)</li>
+        <li>Assigns provenance, authority weight, and confidence</li>
+        <li>Stores entries in the memory store; does not touch the context window</li>
+        <li>One run serves N downstream queries</li>
+      </ul>
+    </div>
+  </div>
+  <div class="arch-arrow">→</div>
+  <div class="stage-box stage-2">
+    <div class="stage-header">
+      Stage 2 — Selection
+      <span class="stage-meta">Inference-time · Query-conditioned · Fast</span>
+    </div>
+    <div class="stage-body">
+      Runs inside the inference latency budget. Receives the current query and selects relevant entries from the pre-built memory store. Does not generate; does not read raw sources. Assembles a structured context payload for injection.
+      <ul class="stage-items">
+        <li>Queries memory store by tier, recency, relevance, and authority</li>
+        <li>Applies token budget constraints across tiers</li>
+        <li>Proactively surfaces prospective items regardless of query similarity</li>
+        <li>Assembles and injects context payload into the prompt</li>
+        <li>Falls back to a lightweight staleness gate when generation cadence lags</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<p>The separation is not merely an engineering optimization. It reflects an epistemologically correct framing of the enterprise memory problem: the reasoning required to extract signal from noise — determining what from a large source artifact is worth preserving — is too expensive to perform inside the inference latency budget at scale. That reasoning belongs in Stage 1, where it can be scheduled, cached, and amortized.</p>
+
+<div class="economics">
+  <div class="economics-label">Economics of the Two-Stage Structure</div>
+  <p style="font-size: 14.5px; color:#333; margin-bottom:12px;">The core economic claim: one Stage 1 generation run serves many Stage 2 selection operations. The amortization ratio is the primary lever for inference cost management.</p>
+  <div class="econ-grid">
+    <div class="econ-cell">
+      <span class="econ-num">1×</span>
+      <div class="econ-label">Generation cost<br>per source event</div>
+    </div>
+    <div class="econ-cell">
+      <span class="econ-num">N×</span>
+      <div class="econ-label">Queries served from<br>each generation run</div>
+    </div>
+    <div class="econ-cell">
+      <span class="econ-num">~O(1)</span>
+      <div class="econ-label">Marginal cost per<br>query at Stage 2</div>
+    </div>
+  </div>
+</div>
+
+<hr class="soft">
+<div class="section">
+  <div class="section-label">The Model-Forward Property</div>
+  <h2>Why This Architecture Gets Better Automatically</h2>
+</div>
+
+<p>The two-stage architecture is model-forward by construction. The mechanism is precise: Stage 1 generation quality is a direct function of the foundation model's reasoning capability. When the foundation model improves — through a model update, a capability jump, or a fine-tuned variant — Stage 1 produces better memory entries from the same source material, without any change to the Stage 2 retrieval layer or the memory store schema.</p>
+
+<p>This contrasts with architectures that embed memory logic in prompt templates or retrieval heuristics: those must be re-engineered when the model changes, because the logic is coupled to a specific model's behavior. The two-stage architecture decouples memory quality from model specifics. The model executes the generation contract; it does not define it.</p>
+
+<div class="callout">
+  A practical implication: the two-stage architecture gives teams a clear upgrade path. When a better foundation model becomes available, Stage 1 can be re-run over historical source material to regenerate memory entries at higher quality — without touching Stage 2 or the downstream inference infrastructure. This is the operational meaning of model-forward.
+</div>
+
+<hr class="soft">
+<div class="section">
+  <div class="section-label">The Open Frontier</div>
+  <h2>Agentic Retrieval for Non-Conversational Sources</h2>
+</div>
+
+<p>The two-stage architecture is well-understood for the conversational case: a human-bot conversation produces a transcript, Stage 1 reads it and extracts structured memory entries. The transcript is the trace, and the trace is human-readable, relatively dense with signal, and structurally familiar.</p>
+
+<p>The open engineering problem is what happens when the source stream is not a conversation.</p>
+
+<div class="source-compare">
+  <div class="source-card human">
+    <div class="source-label">Conversational Sources</div>
+    <h3>Human-Bot Interaction Transcripts</h3>
+    <p>Dense with signal relative to volume. Human-generated intent is explicit. "Process everything" is computationally tractable and frequently correct. The state of the art here is reasonably mature.</p>
+  </div>
+  <div class="source-card agent">
+    <div class="source-label">Non-Conversational Sources · Open Frontier</div>
+    <h3>Agentic Artifact Streams</h3>
+    <p>MCP tool outputs, plan execution traces, multi-agent exchange logs, intermediate task states. High volume, low signal density, often structurally ambiguous. "Process everything" is expensive and produces high noise. The published architecture for this class is sparse.</p>
+  </div>
+</div>
+
+<p>For agentic artifact streams, Stage 1 cannot simply read and summarize. It must determine, agentically, <em>what from this tool trace or plan execution record is worth preserving</em> — and that determination requires understanding task intent, execution outcome, and downstream relevance across a heterogeneous stream.</p>
+
+<p>This is a genuinely different retrieval problem from the conversational case. Enterprise-scale deployments that operate through non-human-bot infrastructure generate artifact streams that are orders of magnitude larger than conversation transcripts, with far lower signal density per token. The systems-level challenge — how to build a Stage 1 process that is both selective and comprehensive across these streams — does not yet have a canonical solution in the published literature.</p>
+
+<hr class="soft">
+<div class="section">
+  <div class="section-label">Design Prescriptions</div>
+  <h2>What This Implies for System Builders</h2>
+</div>
+
+<div class="prescriptions">
+
+  <div class="prescription">
+    <h3>Treat Stage 1 as infrastructure, not a pipeline step</h3>
+    <p>Stage 1 should be event-triggered (runs when new source material arrives), independently scalable (generation load is decoupled from inference load), and continuously monitored (the amortization ratio — how many queries each generation run serves — is your primary economic health metric). Systems that implement Stage 1 as a synchronous step in the inference path have defeated the architecture's purpose.</p>
+  </div>
+
+  <div class="prescription">
+    <h3>Source authority is a first-class input to Stage 1</h3>
+    <p>Not all source material carries equal epistemic weight. A formal decision record carries higher authority than a brainstorming chat message; a calendar invite carries higher commitment weight than a verbal agreement in a transcript. Stage 1 must tag every generated memory entry with provenance and authority weight. Stage 2 uses these signals during selection to calibrate confidence. Systems that treat all sources as equivalent produce memory entries of wildly varying reliability that are indistinguishable at retrieval time.</p>
+  </div>
+
+  <div class="prescription">
+    <h3>Design Stage 1 separately for conversational and agentic sources</h3>
+    <p>The conversational case and the agentic artifact case have different signal densities, different structural vocabularies, and different notions of "what matters." A unified Stage 1 that treats both as raw text to summarize will underperform on both. The agentic artifact case in particular requires task-intent understanding to determine which intermediate states and tool outputs are worth preserving — this is closer to an evaluation problem than a summarization problem.</p>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <p><strong>Related work:</strong>
+    <a href="/writing/2026/02/15/four-tier-memory-taxonomy.html">A Four-Tier Memory Taxonomy for Enterprise Agentic Systems</a> ·
+    <a href="/writing/2026/04/12/agentic-runtime-layer.html">The Agentic Runtime Layer: A Framework for How Agents Know, Do, and Decide</a> ·
+    <a href="#">Agent Epistemic Integrity (companion whitepaper, forthcoming)</a>
+  </p>
+  <p style="margin-top:8px;">March 2026 · Independent research perspective.</p>
+</style>
+</footer>
+{% include site-footer.html %}
+</article>
+</body>
+</html>

@@ -1,0 +1,800 @@
+---
+layout: null
+title: "How Modern AI Reads: Three Ways to Solve the Attention Problem"
+date: 2026-04-12
+categories: [notes]
+description: "A learner's guide to the three main strategies modern AI uses to handle long context — dense attention, sliding window, and memory-augmented retrieval — and the tradeoffs each makes between speed, coverage, and cost."
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Modern AI Reads: Three Ways to Solve the Attention Problem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1c1917;
+    --ink-soft: #44403c;
+    --ink-muted: #78716c;
+    --paper: #faf9f7;
+    --paper-warm: #f5f0e8;
+    --rule: #e7e2d9;
+    --accent: #b45309;
+    --accent-light: #fef3c7;
+    --ds-border: #3b82f6; --ds-text: #1d4ed8; --ds-tint: #f0f6ff;
+    --qw-border: #22c55e; --qw-text: #15803d; --qw-tint: #f0fdf5;
+    --mm-border: #a78bfa; --mm-text: #6d28d9; --mm-tint: #f7f4ff;
+    --win: #15803d; --lose: #b91c1c; --tradeoff: #92400e;
+    --stress-border: #d97706; --stress-bg: #fffbf0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Lora', Georgia, serif;
+    font-size: 17px;
+    line-height: 1.82;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    border-bottom: 1px solid var(--rule);
+    padding: 60px 0 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(90deg, transparent, transparent 59px, var(--rule) 59px, var(--rule) 60px);
+    opacity: .3;
+  }
+  .header-inner { position: relative; z-index: 1; }
+  .series-tag {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid var(--accent);
+    padding: 3px 12px; border-radius: 2px; margin-bottom: 24px;
+  }
+  h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 300; line-height: 1.18; letter-spacing: -.025em;
+    max-width: 680px; margin: 0 auto 20px;
+  }
+  h1 em { font-style: italic; color: var(--accent); }
+  .byline {
+    font-family: 'DM Mono', monospace;
+    font-size: 11.5px; color: var(--ink-muted); letter-spacing: .04em; line-height: 2;
+  }
+  .byline span { color: var(--ink-soft); }
+
+  /* ── Layout ── */
+  .container { max-width: 760px; margin: 0 auto; padding: 0 28px; }
+  .container-wide { max-width: 1100px; margin: 0 auto; padding: 0 28px; }
+
+  /* ── Prose ── */
+  .prose { padding: 52px 0 0; }
+  .prose p { margin-bottom: 1.45em; color: var(--ink-soft); }
+  .prose > p:first-child { color: var(--ink); font-size: 18px; }
+  .prose strong { color: var(--ink); font-weight: 600; }
+
+  h2 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 25px; font-weight: 300;
+    color: var(--ink); margin: 56px 0 18px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--rule);
+    letter-spacing: -.01em;
+  }
+
+  /* ── Pull quote ── */
+  .pullquote {
+    border-left: 3px solid var(--accent);
+    margin: 36px 0; padding: 16px 26px;
+    background: var(--accent-light);
+    border-radius: 0 6px 6px 0;
+  }
+  .pullquote p {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 18px; font-style: italic;
+    color: var(--ink); margin: 0; line-height: 1.65;
+  }
+
+  /* ════════════════════════════════
+     APPROACH SECTION — new structure
+  ════════════════════════════════ */
+
+  /* 1. The big intuitive header — dominant visual anchor */
+  .approach-header {
+    margin: 52px 0 0;
+    padding: 28px 0 20px;
+    border-top: 1.5px solid var(--rule);
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+  }
+  .approach-emoji {
+    font-size: 44px;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .approach-header-text { flex: 1; }
+  .approach-attribution {
+    font-family: 'DM Mono', monospace;
+    font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .approach-attribution.ds { color: var(--ds-text); }
+  .approach-attribution.qw { color: var(--qw-text); }
+  .approach-attribution.mm { color: var(--mm-text); }
+  .approach-name {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: clamp(26px, 3.5vw, 36px);
+    font-weight: 300; line-height: 1.15;
+    letter-spacing: -.02em; color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .approach-subtitle {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 14px; font-style: italic;
+    color: var(--ink-muted); line-height: 1.5;
+  }
+
+  /* 2. Core bet — editorial left-rule style, not a boxy banner */
+  .core-bet {
+    margin: 18px 0 22px;
+    padding: 14px 0 14px 22px;
+  }
+  .core-bet.ds { border-left: 3px solid var(--ds-border); }
+  .core-bet.qw { border-left: 3px solid var(--qw-border); }
+  .core-bet.mm { border-left: 3px solid var(--mm-border); }
+  .core-bet-label {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 12px; font-style: italic;
+    margin-bottom: 7px; display: block;
+  }
+  .core-bet-label.ds { color: var(--ds-text); }
+  .core-bet-label.qw { color: var(--qw-text); }
+  .core-bet-label.mm { color: var(--mm-text); }
+  .core-bet-text {
+    font-size: 16px; line-height: 1.72;
+    color: var(--ink-soft);
+  }
+  .core-bet-text strong { color: var(--ink); font-weight: 600; }
+
+  /* 3. Analogy detail card */
+  .analogy-card {
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 24px 26px;
+    margin-bottom: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom: none;
+  }
+  .analogy-card-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 16px; font-weight: 400; font-style: italic;
+    color: var(--ink-muted); margin-bottom: 14px;
+    letter-spacing: .01em;
+  }
+  .analogy-body { font-size: 15px; line-height: 1.75; color: var(--ink-soft); }
+  .analogy-body p { margin-bottom: 12px; }
+  .analogy-body p:last-child { margin-bottom: 0; }
+  .analogy-body strong { color: var(--ink); font-weight: 600; }
+  .analogy-tag {
+    display: inline-block;
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    margin-top: 16px; padding: 3px 9px; border-radius: 3px;
+  }
+  .analogy-tag.ds { background: #dbeafe; color: var(--ds-text); }
+  .analogy-tag.qw { background: #dcfce7; color: var(--qw-text); }
+  .analogy-tag.mm { background: #ede9fe; color: var(--mm-text); }
+
+  /* 4. Stress-test — connects below the card */
+  .stress-box {
+    border: 1px solid var(--stress-border);
+    border-top: none;
+    background: var(--stress-bg);
+    border-radius: 0 0 10px 10px;
+    padding: 20px 26px 24px;
+    margin-bottom: 8px;
+  }
+  .stress-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9.5px; font-weight: 500; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--stress-border);
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .stress-label::before {
+    content: ''; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--stress-border); flex-shrink: 0;
+  }
+  /* connect card to stress box with top border on card */
+  .analogy-card { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .analogy-card + .stress-box { border-top: 1px solid #f3d9a0; }
+
+  /* Q&A within stress box */
+  .qa-item { margin-bottom: 18px; }
+  .qa-item:last-child { margin-bottom: 0; }
+  .qa-q {
+    font-size: 14.5px; font-weight: 600; color: var(--ink);
+    margin-bottom: 6px; line-height: 1.5; display: flex; gap: 10px;
+  }
+  .qa-q-icon {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; color: var(--stress-border); font-weight: 500;
+    flex-shrink: 0; margin-top: 3px; letter-spacing: .04em;
+  }
+  .qa-a {
+    font-size: 14px; color: var(--ink-soft);
+    line-height: 1.72; padding-left: 32px;
+  }
+  .qa-a strong { color: var(--ink); font-weight: 600; }
+  code {
+    font-family: 'DM Mono', monospace; font-size: 11.5px;
+    background: #ede9df; padding: 1px 5px; border-radius: 3px; color: var(--ink);
+  }
+
+  /* ── Two-column info cards ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0 32px; }
+  .info-card { border: 1px solid var(--rule); border-radius: 8px; padding: 18px 20px; background: #fff; }
+  .info-card-label {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 7px;
+  }
+  .info-card-title {
+    font-family: 'Fraunces', Georgia, serif; font-size: 17px;
+    font-weight: 400; margin-bottom: 10px; color: var(--ink);
+  }
+  .info-card ul { list-style: none; font-size: 13.5px; color: var(--ink-soft); line-height: 1.75; }
+  .info-card ul li { padding: 2px 0 2px 16px; position: relative; }
+  .info-card ul li::before { content: '—'; position: absolute; left: 0; color: var(--ink-muted); }
+
+  /* ── Section break ── */
+  .section-break { text-align: center; padding: 52px 0 0; border-top: 1px solid var(--rule); margin-top: 20px; }
+  .section-break-label {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: .15em; text-transform: uppercase; color: var(--ink-muted);
+  }
+
+  /* ── Full comparison table ── */
+  .table-section {
+    margin-top: 44px; padding: 52px 0 64px;
+    background: var(--paper-warm); border-top: 1px solid var(--rule);
+  }
+  .table-title {
+    font-family: 'Fraunces', Georgia, serif; font-size: 26px;
+    font-weight: 300; color: var(--ink); margin-bottom: 5px;
+  }
+  .table-subtitle {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    color: var(--ink-muted); letter-spacing: .06em; margin-bottom: 28px;
+  }
+  .table-wrap { overflow-x: auto; border-radius: 8px; box-shadow: 0 1px 5px rgba(0,0,0,.07); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; min-width: 860px; }
+  thead th {
+    padding: 14px 15px 12px; text-align: left;
+    font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500;
+    letter-spacing: .08em; text-transform: uppercase;
+    border-bottom: 2px solid var(--rule); background: #fdfcfa; white-space: nowrap;
+  }
+  thead th.dim-col { color: var(--ink); background: #f0ebe0; width: 165px; }
+  thead th.ds-col { color: var(--ds-text); }
+  thead th.qw-col { color: var(--qw-text); }
+  thead th.mm-col { color: var(--mm-text); }
+  tbody tr { border-bottom: 1px solid #f0ece6; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 13px 15px; vertical-align: top; line-height: 1.62; color: var(--ink-soft); font-size: 13px; }
+  tbody td.dim {
+    font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500;
+    color: var(--ink); background: #faf5ec; border-right: 1px solid var(--rule);
+    vertical-align: middle; line-height: 1.5;
+  }
+  tbody td.ds-col { background: #fafcff; }
+  tbody td.qw-col { background: #fafffc; }
+  tbody td.mm-col { background: #fdfaff; }
+  .section-row td {
+    background: var(--ink) !important; color: #fff !important;
+    font-family: 'DM Mono', monospace !important; font-size: 10px !important;
+    font-weight: 500 !important; letter-spacing: .1em;
+    text-transform: uppercase; padding: 8px 15px !important;
+  }
+  .math { font-family: 'Lora', Georgia, serif; font-style: italic; }
+  .win { color: var(--win); font-weight: 500; }
+  .lose { color: var(--lose); font-weight: 500; }
+  .tradeoff { color: var(--tradeoff); font-weight: 500; }
+  .ref { display: block; margin-top: 5px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--ink-muted); line-height: 1.5; }
+
+  /* ── Footnotes ── */
+  .footnotes {
+    margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--rule);
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink-muted); line-height: 1.9;
+  }
+  .footnotes strong { color: var(--ink-soft); font-weight: 500; }
+  .legend-row { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  footer {
+    text-align: center; padding: 40px 24px;
+    border-top: 1px solid var(--rule);
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    color: var(--ink-muted); letter-spacing: .05em; line-height: 2;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  header { animation: fadeUp .55s ease both; }
+  .prose { animation: fadeUp .55s .1s ease both; }
+
+  @media (max-width: 640px) {
+    .two-col { grid-template-columns: 1fr; }
+    body { font-size: 15px; }
+    h1 { font-size: 26px; }
+    .approach-name { font-size: 24px; }
+    .approach-emoji { font-size: 36px; }
+  }
+
+  /* === Site navigation === */
+  .site-nav { display:flex; align-items:center; justify-content:space-between; max-width:800px; margin:0 auto; padding:14px 24px 16px; border-bottom:1px solid rgba(255,255,255,.2); }
+  .site-nav-home { font-weight:600; font-size:15px; font-family:'Lora',Georgia,serif; color:var(--paper); text-decoration:none; letter-spacing:-.01em; opacity:.9; }
+  .site-nav-links { display:flex; gap:22px; }
+  .site-nav-links a { font-size:14px; color:var(--paper); opacity:.7; text-decoration:none; }
+  .site-nav-links a:hover, .site-nav-home:hover { opacity:1; text-decoration:underline; }
+  .site-nav-wrap { background:var(--ink); }
+  .site-footer-nav { max-width:800px; margin:0 auto; padding:16px 24px; font-size:12px; color:var(--ink-muted); text-align:center; border-top:1px solid var(--rule); margin-top:36px; }
+  .site-footer-nav a { color:var(--ink-muted); text-decoration:none; margin:0 4px; }
+  .site-footer-nav a:hover { color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="site-nav-wrap">
+  <nav class="site-nav">
+    <a class="site-nav-home" href="/">Iris Axon Lab</a>
+    <div class="site-nav-links">
+      <a href="/">About</a>
+      <a href="/posts/">Writing</a>
+      <a href="/projects/">Projects</a>
+      <a href="/notes/">Notes</a>
+    </div>
+  </nav>
+</div>
+
+<!-- ── Header ── -->
+<header>
+  <div class="header-inner">
+    <div class="series-tag">Learning / Perspective · AI Architecture · Stress-Tested</div>
+    <h1>How Modern AI Reads:<br><em>Three Ways</em> to Solve the Attention Problem</h1>
+    <div class="byline">
+      A learner's note by <span>Iris (Zhihong) Shen</span> &nbsp;·&nbsp; April 2026<br>
+      Each analogy is followed by the questions it invites — and honest answers to them.
+    </div>
+  </div>
+</header>
+
+<!-- ── Intro ── -->
+<div class="container">
+  <div class="prose">
+
+    <p>I've been studying three architectural approaches to one of the hardest problems in large language models: how to make a model read very long documents without the cost becoming prohibitive. The Jan 2025 MiniMax-01 paper, the Jun 2025 MiniMax-M1 paper, DeepSeek V2/V3, and the Qwen3 family all tackle the same problem — and they arrived at genuinely different answers.</p>
+
+    <p>This note uses a library analogy to make the differences intuitive. But I wanted to do more than explain the first-level metaphor — I wanted to stress-test each one against the hard questions a skeptical reader would raise. Each section below leads with the core architectural bet, then gives the analogy, then works through the questions the analogy invites. The goal is an explanation you could actually defend, not just one that sounds right on first read.</p>
+
+    <div class="pullquote">
+      <p>The core problem: as a language model reads more text, the cost of "paying attention" to all of it grows quadratically. Double the context, quadruple the work. At a million tokens this becomes physically impossible at any reasonable cost. Three teams found three different ways out — and understanding precisely how they differ requires going past the surface of each analogy.</p>
+    </div>
+
+    <h2>The Library</h2>
+
+    <p>Imagine every language model is a researcher working in a library. Their job: read everything on the desk and write an answer, one word at a time. Before writing each word, they consult everything they've read so far. The pile grows; the consulting grows with it.</p>
+
+    <p>In the original Transformer, the researcher re-reads every document completely before writing every single word. Pile doubles → work quadruples. Most models cap out around 128K tokens because beyond that, the re-reading becomes physically impossible within reasonable time and cost.</p>
+
+    <p>Here is how three teams fixed it.</p>
+
+
+    <!-- ════════════════════════════════════
+         APPROACH 1 — DEEPSEEK / MLA
+    ════════════════════════════════════ -->
+
+    <div class="approach-header">
+      <div class="approach-emoji">🗒️</div>
+      <div class="approach-header-text">
+        <div class="approach-attribution ds">DeepSeek V2 / V3 / R1 &nbsp;·&nbsp; MLA · Multi-Head Latent Attention</div>
+        <div class="approach-name">The Sticky-Note System</div>
+        <div class="approach-subtitle">Same walk to every shelf. Smaller cards on each shelf.</div>
+      </div>
+    </div>
+
+    <div class="core-bet ds">
+      <span class="core-bet-label ds">The core bet</span>
+      <div class="core-bet-text">
+        <strong>Memory is the binding constraint, not compute.</strong> At production scale, what limits how many users you can serve simultaneously isn't raw processing speed — it's how much desk space each session occupies. Compress what gets written down by 5–13×, and you can serve far more users with the same hardware. The reading process itself doesn't change; only the card size does.
+      </div>
+    </div>
+
+    <div class="analogy-card">
+      <div class="analogy-card-title">How it works in the library</div>
+      <div class="analogy-body">
+        <p>The researcher still re-reads everything — same walk across every shelf, same sweep before each word. But each document has been condensed into a tight sticky note using a special learned shorthand. Much less to carry. The reading operation hasn't changed; only the card size has.</p>
+        <p><strong>What gets stored:</strong> a compressed latent vector c<sub>KV</sub> per token. A complete archive where nothing is ever deleted. Compression is spatial — a smaller representation — not temporal. Every token's information is stored and retrievable.</p>
+        <p><strong>Why this matters in practice:</strong> fewer GPUs needed to serve the same number of users. The saved memory holds more concurrent sessions. At the scale DeepSeek operates, this is a significant infrastructure win.</p>
+      </div>
+      <span class="analogy-tag ds">DeepSeek-V2 · Jun 2024 · "low-rank key-value joint compression"</span>
+    </div>
+
+    <div class="stress-box">
+      <div class="stress-label">Stress-testing the sticky-note analogy</div>
+
+      <div class="qa-item">
+        <div class="qa-q"><span class="qa-q-icon">Q</span> If the notes are compressed, doesn't that cause information loss?</div>
+        <div class="qa-a">Yes, technically — low-rank projection is mathematically lossy. But DeepSeek's own ablations show MLA <em>outperforms</em> standard full-size attention on most benchmarks. The full KV space is massively redundant: most dimensions carry correlated, overlapping signal. The compression forces the model to learn a more essential basis — it's not JPEG losing visible detail, it eliminates dimensions that weren't doing independent work. <strong>Correct framing: technically lossy, empirically lossless in ways that matter — and sometimes better, because it eliminates redundancy.</strong></div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q"><span class="qa-q-icon">Q</span> If you're reading smaller notes, isn't that also a compute reduction — not just memory?</div>
+        <div class="qa-a">Partially right, and the analogy oversimplified by saying "same cognitive operation." The <em>content</em> part of attention can be computed in compressed latent space — a real saving. But MLA uses <strong>decoupled RoPE</strong>: the positional encoding component of keys cannot be absorbed into this trick and must be computed separately at full cost. Content attention cheaper ✓, positional attention full-cost ✗. The dominant scaling term stays O(n²). <strong>Correct framing: primarily a memory solution, with a bounded constant-factor compute benefit that doesn't change the scaling complexity class. It cannot economically reach 1M token contexts.</strong></div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q"><span class="qa-q-icon">Q</span> So what is MLA genuinely good at, and what doesn't it solve?</div>
+        <div class="qa-a">It excels at production serving — more users per GPU, lower infrastructure cost at typical context lengths. It preserves complete information (nothing deleted) and maintains exact positional precision via its separate RoPE path. What it doesn't solve: the quadratic cost growth. The right bet if your constraint is serving throughput at moderate context. The wrong bet if your goal is breaking the 1M-token barrier.</div>
+      </div>
+    </div>
+
+
+    <!-- ════════════════════════════════════
+         APPROACH 2 — QWEN / DELTANET
+    ════════════════════════════════════ -->
+
+    <div class="approach-header">
+      <div class="approach-emoji">📔</div>
+      <div class="approach-header-text">
+        <div class="approach-attribution qw">Qwen3-Next / Kimi Linear &nbsp;·&nbsp; Gated DeltaNet · 3:1 hybrid ratio</div>
+        <div class="approach-name">The Rolling Summary Notepad</div>
+        <div class="approach-subtitle">Don't re-read the shelf. Update the notepad. Check the shelf every 4th time.</div>
+      </div>
+    </div>
+
+    <div class="core-bet qw">
+      <span class="core-bet-label qw">The core bet</span>
+      <div class="core-bet-text">
+        <strong>Training stability is the real blocker, and full attention is the cause.</strong> At large scale, standard attention creates gradient instabilities and "attention sink" pathologies. The fix: replace most attention layers with a fixed-size, continuously-updated memory that uses only the delta — what changed — rather than re-reading everything. Occasional full re-reads keep precision from degrading entirely. The dominant cost becomes sub-quadratic, but some distant content can be partially overwritten and lost.
+      </div>
+    </div>
+
+    <div class="analogy-card">
+      <div class="analogy-card-title">How it works in the library</div>
+      <div class="analogy-body">
+        <p>The researcher keeps a single evolving notepad — one fixed-size matrix M — updated each time a new document arrives. The update uses only the <em>prediction error</em>: how wrong is the current notepad about what value to retrieve for this key, and by how much? Every 3 documents, one full traditional re-read catches what the notepad missed.</p>
+        <p><strong>The update rule:</strong> <code>M ← M + (v − Mk)kᵀ</code> — an in-place correction, not an append. The term (v − Mk) is the prediction error. No history of past states of M is kept.</p>
+        <p><strong>Why this matters:</strong> the desk size stays constant regardless of how many documents arrive. No more quadratic cost growth for the dominant computation. The 1-in-4 full re-reads are a genuine necessity — not a performance choice — to rescue retrievals the notepad has degraded.</p>
+      </div>
+      <span class="analogy-tag qw">Qwen3-Next · Apr 2025 · Gated Delta Networks 2024</span>
+    </div>
+
+    <div class="stress-box">
+      <div class="stress-label">Stress-testing the rolling notepad analogy</div>
+
+      <div class="qa-item">
+        <div class="qa-q"><span class="qa-q-icon">Q</span> Is this like a database append log — tracking changes and walking through to reconstruct state?</div>
+        <div class="qa-a">No — and this is the most important correction. An append log keeps every entry. DeltaNet's M is a single matrix overwritten in place every step. A better database analogy: <strong>a key-value store with no versioning</strong>. When a new document has a key similar to an earlier one, the later update partially overwrites the earlier contribution to M. The earlier token's information may be degraded or gone. There is no log to walk through — the history is destroyed by subsequent writes.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q"><span class="qa-q-icon">Q</span> What kinds of information actually get lost?</div>
+        <div class="qa-a">Two distinct kinds. First, <strong>content loss via overwriting:</strong> tokens with similar keys interfere — document #200 and #847 on the same topic means #847's update partially erases #200's contribution. Unbounded; grows with semantic overlap. Second, <strong>positional loss via coarse decay:</strong> DeltaNet has no explicit RoPE in its linear layers. Gating signals (α, β) create a rough recency bias but you lose the exact "token 847 vs. 923" granularity. You know <em>recent vs. distant</em>, not <em>exactly when</em>.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q"><span class="qa-q-icon">Q</span> Is "linear complexity" a rigorous claim?</div>
+        <div class="qa-a">Approximately, not asymptotically. True total: (3/4)×O(n·d²) + (1/4)×O(n²·d). At very large n, the quadratic correction layers eventually dominate. "Linear" is honest as a description of the dominant regime at practical lengths. <strong>Better framing: makes the dominant cost linear, with a bounded quadratic correction overhead at every 4th layer.</strong></div>
+      </div>
+    </div>
+
+
+    <!-- ════════════════════════════════════
+         APPROACH 3 — MINIMAX / LIGHTNING
+    ════════════════════════════════════ -->
+
+    <div class="approach-header">
+      <div class="approach-emoji">🖥️🖥️</div>
+      <div class="approach-header-text">
+        <div class="approach-attribution mm">MiniMax-01 / MiniMax-M1 &nbsp;·&nbsp; Lightning Attention · 7:1 hybrid ratio</div>
+        <div class="approach-name">The Two-Desk System</div>
+        <div class="approach-subtitle">Desk 1: read the last few pages exactly. Desk 2: run a tally of everything else.</div>
+      </div>
+    </div>
+
+    <div class="core-bet mm">
+      <span class="core-bet-label mm">The core bet</span>
+      <div class="core-bet-text">
+        <strong>The test-time compute era changes the cost equation for reasoning.</strong> Reasoning models generate 40K–80K+ tokens of internal "thinking" before producing an answer. With standard attention, each thinking token pays quadratic cost — so thinking longer gets exponentially expensive. The answer: split every attention layer into exact local computation and an approximate global accumulation. The dominant cost becomes linear, making million-token contexts and deep reasoning chains genuinely affordable. The tradeoff: distant content is diluted in the global accumulation, not precisely retrievable.
+      </div>
+    </div>
+
+    <div class="analogy-card">
+      <div class="analogy-card-title">How it works in the library</div>
+      <div class="analogy-body">
+        <p><strong>Desk 1 — local (intra-block):</strong> full, exact re-read of the last N tokens. Nothing compressed, full precision, full RoPE positional encoding. Every token in the recent window gets exact attention.</p>
+        <p><strong>Desk 2 — global (inter-block):</strong> a running cumulative sum S of all prior tokens. Update rule: <code>S ← S + k·vᵀ</code>. Purely additive — no overwriting, no competition. S stays fixed-size regardless of how many tokens have been processed. The researcher consults S for distant context, not the original shelves.</p>
+        <p>Every 7 layers, one full traditional softmax layer re-reads everything to patch what Desk 2 missed. This is the 7:1 lightning-to-softmax ratio — more aggressive than Qwen's 3:1, enabled by the fact that Desk 1 already handles local precision.</p>
+        <p><strong>What this achieves:</strong> at 100K generation tokens, MiniMax-M1 uses approximately 25% of the compute of DeepSeek R1. The 1M-token context window becomes genuinely affordable — this is the only architecture among the three purpose-built to make that regime practical.</p>
+      </div>
+      <span class="analogy-tag mm">MiniMax-01 · Jan 2025 · arXiv 2501.08313 &nbsp;·&nbsp; MiniMax-M1 · Jun 2025 · arXiv 2506.13585</span>
+    </div>
+
+    <div class="stress-box">
+      <div class="stress-label">Stress-testing the two-desk analogy</div>
+
+      <div class="qa-item">
+        <div class="qa-q"><span class="qa-q-icon">Q</span> Isn't Desk 2 basically the same as Qwen's notepad? Both are fixed-size states accumulating from all past tokens.</div>
+        <div class="qa-a">This is the most important stress test, because the similarity is genuine. Both maintain a fixed-size state. Both accumulate from all past tokens. Both lose exact positional information for distant content. These are real parallels. <strong>The divergence is the update rule.</strong> Qwen's DeltaNet uses error-correcting overwriting: <code>M ← M + (v − Mk)kᵀ</code> — similar keys compete, later tokens can erase earlier ones. MiniMax's inter-block uses plain additive accumulation: <code>S ← S + k·vᵀ</code> — no competition, no overwriting. Token #847's information is potentially gone from DeltaNet if overwritten. It's still present in S — just unextractably diluted. Dilution is a meaningfully less destructive form of loss than erasure.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q"><span class="qa-q-icon">Q</span> Does MiniMax also lose positional information for distant tokens, like Qwen?</div>
+        <div class="qa-a">Yes — and this should be stated honestly. The inter-block S matrix carries no explicit RoPE. Distant tokens lose positional precision in the global accumulation, similar to DeltaNet. MiniMax's structural advantage is in the <em>intra-block</em>: within each block, exact softmax attention with full RoPE runs. Every token has its last N tokens with perfect positional precision. DeltaNet's positional degradation runs across all linear layers everywhere; MiniMax's runs only in the inter-block global state, which handles distant context rather than recent.</div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q"><span class="qa-q-icon">Q</span> Is "linear complexity" a rigorous claim here either?</div>
+        <div class="qa-a">Same caveat as Qwen. True formula: (7/8)×O(n·d²) + (1/8)×O(n²·d). Technically O(n²) in the strict limit. But the quadratic residual is half of Qwen's (1/8 vs. 1/4), and at practical lengths (100K–1M tokens) the linear terms dominate — which is what the measured 25% FLOPs figure reflects. <strong>More defensible: lightning attention makes the dominant cost term linear, with a bounded quadratic residual from correction layers — half the quadratic overhead of the Qwen approach. The "linear" claim is honest at practical sequence lengths, not a strict asymptotic statement.</strong></div>
+      </div>
+    </div>
+
+
+    <!-- ── Why positional information matters ── -->
+    <h2>Why Positional Information Deserves Its Own Note</h2>
+
+    <p>Two of the three approaches degrade positional information for distant tokens. It's worth being precise about what that actually costs — because content information and positional information carry very different things.</p>
+
+    <div class="two-col">
+      <div class="info-card">
+        <div class="info-card-label">Content information</div>
+        <div class="info-card-title">What something means</div>
+        <ul>
+          <li>Semantic identity — what a token is <em>about</em></li>
+          <li>Which topics relate to the current query</li>
+          <li>Conceptual relationships between ideas</li>
+          <li>Answers: <em>what was said?</em></li>
+          <li>Reasonably preserved by all three architectures within their limits</li>
+        </ul>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">Positional information (RoPE)</div>
+        <div class="info-card-title">When and in what order</div>
+        <ul>
+          <li>Relative distance between tokens</li>
+          <li>Coreference: "he" → "John" by proximity, not meaning</li>
+          <li>Causal-temporal ordering — this, then that</li>
+          <li>Trajectory: how something evolved across the sequence</li>
+          <li>Answers: <em>when, in what sequence, how it changed</em></li>
+        </ul>
+      </div>
+    </div>
+
+    <p>Models with degraded positional information become <strong>bag-of-words at scale</strong> — they know <em>what</em> was said but lose <em>when</em> and <em>in what order</em>, collapsing a sequence into a pile of facts rather than a narrative. "The policy was announced. Three months later, it was reversed." Content gives you two events. Position gives you the causal arc that makes it a story.</p>
+
+    <p>This matters most for applications tracking how something <em>evolved</em> — emotional trajectory across a conversation, how reasoning shifted across a document, what returned after being dropped. That signal lives almost entirely in positional information. Systems that replace exact RoPE with coarse recency decay degrade exactly that signal for everything in the distant part of their context.</p>
+
+    <h2>The Three Bets, Summarised</h2>
+
+    <p><strong>The Sticky-Note System (DeepSeek MLA):</strong> Keeps a complete archive — every token's compressed representation stored, nothing deleted. Memory shrinks 5–13×; compute has a bounded constant-factor improvement (content attention only) but stays quadratic overall. The right choice when your binding constraint is serving throughput at moderate context. Cannot economically reach 1M tokens.</p>
+
+    <p><strong>The Rolling Summary Notepad (Qwen3 DeltaNet):</strong> A stateful cache with destructive writes — not an append log. Similar keys overwrite each other; distant content can be fully erased rather than just compressed. Loses both content precision (interference) and positional precision (coarse decay). The 1-in-4 full re-reads are a necessity. The "linear" claim is a practical approximation with a bounded O(n²) residual.</p>
+
+    <p><strong>The Two-Desk System (MiniMax Lightning):</strong> The global accumulation and Qwen's notepad are genuine cousins — both fixed-size, both blur distant positional information. The key difference is the update rule: additive accumulation (dilution) vs. error-correcting overwriting (potential erasure). MiniMax also preserves exact local positional precision within each block. The "linear" claim carries the same qualified honesty: dominant regime at practical lengths, with half the quadratic residual overhead of the Qwen approach. The measured 25% FLOPs at 100K tokens is the honest expression of what this achieves.</p>
+
+    <div class="pullquote">
+      <p>Choosing an attention architecture is choosing which constraint you believe is the binding one. DeepSeek bet on serving memory. Qwen bet on training stability. MiniMax bet on the cost of thinking. All three are right about their chosen constraint — and none of them solve the same problem.</p>
+    </div>
+
+  </div><!-- /prose -->
+</div><!-- /container -->
+
+<!-- ── Section break ── -->
+<div class="container">
+  <div class="section-break">
+    <div class="section-break-label">↓ &nbsp; Full comparison reference table &nbsp; ↓</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     FULL COMPARISON TABLE
+══════════════════════════════════ -->
+<div class="table-section">
+  <div class="container-wide">
+    <div class="table-title">Full Comparison Reference</div>
+    <div class="table-subtitle">Update rules · complexity · positional handling · benchmarks · honest limitations</div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="dim-col">Dimension</th>
+            <th class="ds-col">🗒️ The Sticky-Note System<br><span style="font-weight:400;color:#93c5fd">DeepSeek MLA</span></th>
+            <th class="qw-col">📔 The Rolling Summary Notepad<br><span style="font-weight:400;color:#86efac">Qwen3 Gated DeltaNet</span></th>
+            <th class="mm-col">🖥️🖥️ The Two-Desk System<br><span style="font-weight:400;color:#c4b5fd">MiniMax Lightning Attention</span></th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <tr class="section-row"><td colspan="4">Core Architectural Bet</td></tr>
+          <tr>
+            <td class="dim">What constraint does this solve?</td>
+            <td class="ds-col">Memory bandwidth. Compress KV cache 5–13× so more users fit on the same hardware.</td>
+            <td class="qw-col">Training stability. Replace unstable full attention with a gated delta-rule memory that avoids gradient pathologies at scale.</td>
+            <td class="mm-col">Test-time compute cost. Make generating 80K thinking tokens affordable by keeping the dominant cost linear.</td>
+          </tr>
+          <tr>
+            <td class="dim">What it refuses to sacrifice</td>
+            <td class="ds-col">Retrieval quality — full softmax preserved; compression learned to be near-lossless.</td>
+            <td class="qw-col">Training stability — the output gating eliminates attention sink. A first-class requirement.</td>
+            <td class="mm-col">Context length ceiling — breaking 1M was a first-class design goal.</td>
+          </tr>
+
+          <tr class="section-row"><td colspan="4">The Library Analogy</td></tr>
+          <tr>
+            <td class="dim">What gets stored between words</td>
+            <td class="ds-col">Compressed card c<sub>KV</sub> per token. Complete archive — nothing ever deleted. Spatial compression only.</td>
+            <td class="qw-col">One fixed-size matrix M, overwritten in place each step. No history. Key-value store with no versioning.</td>
+            <td class="mm-col">Two states: exact local buffer (last N tokens) + global running sum S (all prior, additive). Both fixed-size.</td>
+          </tr>
+          <tr>
+            <td class="dim">Can token #847's info be retrieved?</td>
+            <td class="ds-col"><span class="win">Yes</span> — its c<sub>KV</sub> is stored; decompress on demand.</td>
+            <td class="qw-col"><span class="lose">Maybe not</span> — if later similar-key tokens overwrote M, the contribution may be gone.</td>
+            <td class="mm-col"><span class="tradeoff">Sort of</span> — its k·vᵀ is in S but unextractably averaged with all others. Diluted, not deleted.</td>
+          </tr>
+          <tr>
+            <td class="dim">Type of information loss</td>
+            <td class="ds-col">Bounded spatial compression. Empirically near-zero on benchmarks.</td>
+            <td class="qw-col">Two kinds: content erasure (similar keys interfere, later overwrites earlier) + positional coarsening (RoPE replaced by recency decay).</td>
+            <td class="mm-col">Uniform dilution in global S. Positional precision exact within blocks; blurred in inter-block accumulation.</td>
+          </tr>
+          <tr>
+            <td class="dim">Database analogy</td>
+            <td class="ds-col">Compressed but complete archive.</td>
+            <td class="qw-col">Key-value store, no versioning. Later writes can destroy earlier values.</td>
+            <td class="mm-col">Running aggregate. No row deleted, but no individual row is separately recoverable.</td>
+          </tr>
+
+          <tr class="section-row"><td colspan="4">Technical Mechanics</td></tr>
+          <tr>
+            <td class="dim">The update rule</td>
+            <td class="ds-col">Per-token: project to <code>c<sub>KV</sub> = W<sub>DKV</sub>·h</code>, store. Decompress via up-projection when needed. No single global state.
+              <span class="ref">DeepSeek-V2 §3.1</span>
+            </td>
+            <td class="qw-col"><code>M ← M + (v − Mk)kᵀ</code><br>Error-correcting in-place overwrite. (v−Mk) is prediction error. Similar keys compete.
+              <span class="ref">Gated Delta Networks 2024</span>
+            </td>
+            <td class="mm-col"><code>S ← S + k·vᵀ</code><br>Plain additive outer-product sum. No overwriting. Query: q·S ≈ Σᵢ(q·kᵢ)vᵢ
+              <span class="ref">Lightning Attention-2 · Qin et al. 2024 · MiniMax-01 §3</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="dim">Positional info (RoPE)</td>
+            <td class="ds-col"><span class="win">Fully preserved.</span> Decoupled RoPE: content and position are independent paths.
+              <span class="ref">DeepSeek-V2 §3.1 · "decoupled RoPE"</span>
+            </td>
+            <td class="qw-col"><span class="lose">Coarsened in linear layers.</span> Gating (α, β) gives recency bias only. Restored only at 1-in-4 full-attention layers.</td>
+            <td class="mm-col"><span class="tradeoff">Mixed.</span> Exact within each block (full RoPE). Blurred in inter-block S. 1-in-8 softmax layers re-anchor.
+              <span class="ref">MiniMax-01 §3.2</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="dim">Hybrid ratio</td>
+            <td class="ds-col">N/A — all layers are MLA (softmax-based).</td>
+            <td class="qw-col"><strong>3 : 1</strong> linear to full. Conservative; prioritises retrieval safety.</td>
+            <td class="mm-col"><strong>7 : 1</strong> lightning to softmax. More aggressive; enabled by intra-block exact computation.
+              <span class="ref">MiniMax-01 §3.1</span>
+            </td>
+          </tr>
+
+          <tr class="section-row"><td colspan="4">The Math</td></tr>
+          <tr>
+            <td class="dim">True complexity</td>
+            <td class="ds-col"><span class="math lose">O(n² · d<sub>compressed</sub>)</span><br>Still quadratic. Smaller constant; same scaling class.</td>
+            <td class="qw-col"><span class="math">(3/4) × O(n·d²)<br>+ (1/4) × O(n²·d)</span><br>"Linear" at practical lengths; O(n²) in strict limit.</td>
+            <td class="mm-col"><span class="math">(7/8) × O(n·d²)<br>+ (1/8) × O(n²·d)</span><br>Half the quadratic residual of Qwen.
+              <span class="ref">MiniMax-M1 §2</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="dim">Practical FLOPs at 100K tokens vs. full softmax</td>
+            <td class="ds-col"><span class="lose">~100%</span> — bounded constant-factor saving from content attention; positional path unchanged.</td>
+            <td class="qw-col">~40–55% estimated</td>
+            <td class="mm-col"><span class="win">~25% of DeepSeek R1</span> — measured.
+              <span class="ref">MiniMax-M1 §2</span>
+            </td>
+          </tr>
+
+          <tr class="section-row"><td colspan="4">Benchmark Evidence</td></tr>
+          <tr>
+            <td class="dim">Long-context retrieval at 1M tokens (MRCR v2)</td>
+            <td class="ds-col"><span class="lose">Cannot compete</span> — DeepSeek R1 context limit is 128K.</td>
+            <td class="qw-col">Qwen3 dense: 128K. Qwen3-Next: not publicly benchmarked at 1M.</td>
+            <td class="mm-col"><span class="win">Ranked #2 globally</span> — outperforms OpenAI o3 and Claude 4 Opus. Only Gemini 2.5 Pro ranks higher.
+              <span class="ref">MiniMax-M1 release · June 2025</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="dim">Software engineering (SWE-bench Verified)</td>
+            <td class="ds-col">DeepSeek R1-0528: <strong>57.6%</strong> — leads open-weight models on isolated reasoning.</td>
+            <td class="qw-col">Qwen3-235B: competitive with DeepSeek R1 on LiveCodeBench.</td>
+            <td class="mm-col">M1-80k: <strong>56.0%</strong> · M1-40k: <strong>55.6%</strong>
+              <span class="ref">MiniMax-M1 arXiv 2506.13585 Table 2</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="dim">RL training cost</td>
+            <td class="ds-col">Significant H800 use (undisclosed).</td>
+            <td class="qw-col">Not disclosed for reasoning variant.</td>
+            <td class="mm-col"><span class="win">$537K total</span> on 512 H800s · 3 weeks.
+              <span class="ref">MiniMax-M1 §4</span>
+            </td>
+          </tr>
+
+          <tr class="section-row"><td colspan="4">Honest Limitations</td></tr>
+          <tr>
+            <td class="dim">The unsolved problem</td>
+            <td class="ds-col">FLOPs still quadratic. Cannot economically reach 1M contexts regardless of compression quality.</td>
+            <td class="qw-col">Destructive overwriting means distant semantically-similar content can be unrecoverably lost. Positional precision for distant tokens is coarse only.</td>
+            <td class="mm-col">Global S loses sharp retrieval on distant tokens. Positional blurring in inter-block is real. Model verbosity (4× average output tokens) amplifies per-call cost.</td>
+          </tr>
+          <tr>
+            <td class="dim">One-line honest limitation</td>
+            <td class="ds-col">Excellent at serving many users cheaply; cannot scale to where the context itself is the product.</td>
+            <td class="qw-col">The notepad overwrites its own history — exact recall of distant, semantically-similar content is unreliable.</td>
+            <td class="mm-col">The global desk blurs what it doesn't erase — and the model sometimes doesn't know what it missed from document #750,000.</td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footnotes">
+      <strong>Papers and sources:</strong><br>
+      MiniMax-01 · Jan 2025 · arXiv 2501.08313 · "Scaling Foundation Models with Lightning Attention"<br>
+      MiniMax-M1 · Jun 2025 · arXiv 2506.13585 · "Scaling Test-Time Compute Efficiently with Lightning Attention"<br>
+      DeepSeek-V2 · Jun 2024 · "A Strong, Economical, and Efficient Mixture-of-Experts Language Model"<br>
+      Gated Delta Networks · 2024 · "Improving Mamba2 with Delta Rule"<br>
+      Qwen3-Next architecture report · Apr 2025 · Lightning Attention-2 · Qin et al. 2024<br>
+      <br>
+      <strong>On benchmarks:</strong> Figures are vendor-reported unless noted. Architecture comparisons are based on published papers; capability benchmarks evolve faster than architectures.
+      <div class="legend-row">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--ds-border)"></div>DeepSeek MLA</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--qw-border)"></div>Qwen3 Gated DeltaNet</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--mm-border)"></div>MiniMax Lightning Attention</div>
+        <div class="legend-item"><span class="win">■</span>&nbsp;Win</div>
+        <div class="legend-item"><span class="lose">■</span>&nbsp;Limitation</div>
+        <div class="legend-item"><span class="tradeoff">■</span>&nbsp;Trade-off</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Learning / Perspective series · Iris (Zhihong) Shen · April 2026<br>
+  A stress-tested learner's note · Errors are my own · Architecture references circa H1 2025
+</footer>
+
+{% include site-footer.html %}
+
+</body>
+</html>

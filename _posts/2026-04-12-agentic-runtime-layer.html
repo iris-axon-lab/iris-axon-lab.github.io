@@ -1,0 +1,299 @@
+---
+layout: null
+title: "The Agentic Runtime Layer"
+date: 2026-04-12
+categories: [writing]
+description: "A 6-cell framework — Knowing, Doing, and Deciding × session vs. persistent scope — mapping what current agentic systems have solved and where active research and engineering investment is deepening. The open cells represent problems the field has named and is converging on, but for which canonical solutions are still taking shape."
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Agentic Runtime Layer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background: #fff; color: #1a1a1a; font-size: 16px;
+    line-height: 1.75; padding: 52px 24px 88px;
+  }
+  .article { max-width: 760px; margin: 0 auto; }
+
+  .header { border-bottom: 2.5px solid #1a1a1a; padding-bottom: 22px; margin-bottom: 38px; }
+  .eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #999; margin-bottom: 12px; }
+  h1 { font-size: 31px; font-weight: 700; line-height: 1.2; letter-spacing: -.022em; margin-bottom: 11px; }
+  .subtitle { font-size: 16.5px; color: #555; line-height: 1.6; margin-bottom: 18px; max-width: 600px; }
+  .meta { font-size: 12.5px; color: #bbb; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .meta-tag { display: inline-block; font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; background: #f0f0ee; color: #666; padding: 2px 8px; border-radius: 4px; }
+
+  p { margin-bottom: 18px; color: #2a2a2a; }
+  .lede { font-size: 17.5px; line-height: 1.78; color: #1a1a1a; font-style: italic; border-left: 3px solid #1a1a1a; padding-left: 18px; margin-bottom: 28px; }
+
+  .section { margin-top: 44px; margin-bottom: 18px; }
+  .section-label { display: inline-block; background: #1a1a1a; color: #fff; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 3px 10px; border-radius: 3px; margin-bottom: 9px; }
+  h2 { font-size: 20px; font-weight: 700; letter-spacing: -.01em; line-height: 1.3; margin-bottom: 14px; }
+
+  .grid-wrap { margin: 26px 0 10px; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  thead th { text-align: left; padding: 11px 16px; font-size: 12.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+  thead th.th-domain { background: #f5f5f3; color: #888; width: 108px; border-right: 1px solid #e8e8e8; border-bottom: 2px solid #e8e8e8; }
+  thead th.th-session { background: #EEF6FF; color: #1a4a8a; border-bottom: 2px solid #b3d4f5; border-right: 1px solid #ddeeff; }
+  thead th.th-persist { background: #FFF6EE; color: #7a3e00; border-bottom: 2px solid #f5c98b; }
+  tbody tr { border-bottom: 1px solid #efefef; }
+  tbody tr:last-child { border-bottom: none; }
+  td.domain-cell { font-size: 12.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #333; background: #fafaf8; vertical-align: middle; padding: 16px 14px; border-right: 1px solid #e8e8e8; white-space: nowrap; border-left: 4px solid transparent; }
+  tr.row-knowing td.domain-cell  { border-left-color: #3b82f6; }
+  tr.row-doing   td.domain-cell  { border-left-color: #22c55e; }
+  tr.row-deciding td.domain-cell { border-left-color: #f59e0b; }
+  td.session-cell { background: #f7fbff; padding: 15px 16px; vertical-align: top; border-right: 1px solid #ddeeff; }
+  td.persist-cell { background: #fffbf5; padding: 15px 16px; vertical-align: top; }
+  .cell-title { font-weight: 700; font-size: 14.5px; color: #1a1a1a; display: block; margin-bottom: 5px; line-height: 1.35; }
+  .cell-body { font-size: 13.5px; color: #444; line-height: 1.65; }
+  .paper-link { display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 600; color: #1a5fa8; text-decoration: none; background: #cce5ff; padding: 2px 9px; border-radius: 4px; letter-spacing: .02em; margin-right: 4px; }
+  .paper-link:hover { background: #b3d4f5; }
+  .frontier-badge { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #7a3e00; background: #fde8c0; padding: 2px 9px; border-radius: 4px; }
+  .frontier-badge::before { content: "◆"; font-size: 9px; opacity: .6; }
+
+  .equation-box { background: #f5f5f3; border-left: 3px solid #1a1a1a; border-radius: 0 6px 6px 0; padding: 12px 18px; margin: 16px 0 20px; font-family: 'Georgia', serif; font-style: italic; font-size: 16px; color: #1a1a1a; }
+  .insight { background: #f9f9f7; border: 1px solid #e0e0dc; border-radius: 8px; padding: 14px 18px; margin: 20px 0; font-size: 15px; line-height: 1.7; color: #333; }
+  .insight strong { color: #1a1a1a; }
+
+  .horizontals { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 24px 0 28px; }
+  @media (max-width: 560px) { .horizontals { grid-template-columns: 1fr; } }
+  .h-card { border-radius: 9px; padding: 18px 20px; border: 1px solid #e0e0e0; }
+  .h-card.model { border-color: #b7e5cc; background: #edfaf3; }
+  .h-card.econ  { border-color: #c8bfff; background: #f3f0ff; }
+  .h-card-label { font-size: 11.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; margin-bottom: 5px; }
+  .h-card.model .h-card-label { color: #145c33; }
+  .h-card.econ  .h-card-label { color: #4a1fa8; }
+  .h-card-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; color: #1a1a1a; line-height: 1.35; }
+  .h-card p { font-size: 13.5px; color: #444; line-height: 1.65; margin-bottom: 0; }
+
+  .term-note { font-size: 13px; color: #888; border-top: 1px solid #efefef; padding-top: 10px; margin-top: 10px; line-height: 1.65; }
+  hr.soft { border: none; border-top: 1px solid #efefef; margin: 40px 0; }
+  .closing-pull { font-size: 17px; font-weight: 600; color: #1a1a1a; border-left: 3px solid #1a1a1a; padding-left: 18px; line-height: 1.65; margin: 28px 0 20px; }
+  .footer { margin-top: 52px; padding-top: 16px; border-top: 1px solid #eaeaea; font-size: 12.5px; color: #bbb; line-height: 1.9; }
+  .footer a { color: #999; text-decoration: underline; }
+
+  /* === Site navigation === */
+  .site-nav { display:flex; align-items:center; justify-content:space-between; padding:14px 0 16px; border-bottom:1px solid #e0e0dc; margin-bottom:40px; }
+  .site-nav-home { font-weight:600; font-size:15px; font-family:Georgia,serif; color:#1a1a1a; text-decoration:none; letter-spacing:-.01em; }
+  .site-nav-links { display:flex; gap:22px; }
+  .site-nav-links a { font-size:14px; color:#777; text-decoration:none; }
+  .site-nav-links a:hover, .site-nav-home:hover { color:#1a1a1a; text-decoration:underline; }
+  .site-footer-nav { margin-top:36px; padding-top:14px; border-top:1px solid #eaeaea; font-size:12px; color:#bbb; text-align:center; }
+  .site-footer-nav a { color:#999; text-decoration:none; margin:0 4px; }
+  .site-footer-nav a:hover { color:#555; }
+</style>
+</head>
+<body>
+<article class="article">
+<nav class="site-nav">
+  <a class="site-nav-home" href="/">Iris Axon Lab</a>
+  <div class="site-nav-links">
+    <a href="/">About</a>
+    <a href="/posts/">Writing</a>
+    <a href="/projects/">Projects</a>
+    <a href="/notes/">Notes</a>
+  </div>
+</nav>
+
+<header class="header">
+  <div class="eyebrow">Practitioner Framework · Agentic Systems</div>
+  <h1>The Agentic Runtime Layer:<br>A Framework for How Agents Know, Do, and Decide</h1>
+  <p class="subtitle">A map of the problem space sitting between model capability and application design — with working solutions where they exist and honest placeholders where they don't.</p>
+  <div class="meta">
+    <span>April 2026</span>
+    <span class="meta-tag">Knowing · Doing · Deciding</span>
+    <span class="meta-tag">Session → Persistent</span>
+  </div>
+</header>
+
+<p class="lede">There is a question practitioners keep asking in slightly different forms: <em>Why do long-running agents fail in ways that short-lived ones don't?</em> The answer isn't model quality. It isn't prompt engineering. It's that the architectural substrate — the runtime layer responsible for what an agent knows, what it can do, and how it decides — wasn't designed for duration. It was designed for a session.</p>
+
+<p>This post offers a framework for thinking about that substrate systematically. Not a product design, not a roadmap — a map of the problem space, with working solutions where they exist and honest placeholders where they don't.</p>
+
+<div class="section">
+  <div class="section-label">The Problem</div>
+  <h2>Runtime Architecture Is the Missing Layer</h2>
+</div>
+
+<p>Most discourse on agentic AI organizes around two poles: model capability and application design. The model handles language understanding, reasoning, and generation. The application handles business logic, UX, and integration. What sits between them — the runtime layer — often isn't named at all.</p>
+
+<p>That gap matters because agents are not stateless request-response systems. They accumulate context, invoke external capabilities, make commitments that outlive a single turn, and increasingly run for hours or days. Each of those properties introduces a failure class that neither the model nor the application layer is equipped to handle alone: context that goes stale, tools that are called but cannot be trusted, decisions that cannot be corrected.</p>
+
+<p>The runtime layer is the locus of all three.</p>
+
+<hr class="soft">
+<div class="section">
+  <div class="section-label">The Framework</div>
+  <h2>A 3×2 Grid</h2>
+</div>
+
+<p>The runtime layer decomposes along two axes. The first is functional: what an agent does at runtime breaks into three domains — <strong>Knowing</strong> (what it holds as context), <strong>Doing</strong> (what capabilities it can invoke), and <strong>Deciding</strong> (how it governs the use of both over time). The second is operational scope: <strong>session-based</strong> agents operate within bounded, stateless interactions; <strong>persistent / long-running</strong> agents maintain state across time, users, and tasks.</p>
+
+<p>The six cells that result are not equally understood. The session-based column has working solutions. The persistent column is largely frontier territory.</p>
+
+<div class="grid-wrap">
+<table>
+  <thead>
+    <tr>
+      <th class="th-domain">Domain</th>
+      <th class="th-session">Session-Based</th>
+      <th class="th-persist">Persistent / Long-Running ◆</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="row-knowing">
+      <td class="domain-cell">Knowing</td>
+      <td class="session-cell">
+        <span class="cell-title">Memory generation &amp; retrieval within a session</span>
+        <span class="cell-body">Two-stage pipeline (async generation + inference-time selection) is now broadly understood. The open engineering problem is the <em>source</em>: generating memory from non-human-bot interactions — MCP tool outputs, autonomous task traces, multi-agent exchanges — rather than from conversation transcripts alone.</span>
+        <br><a class="paper-link" href="/writing/2026/02/01/two-stage-memory-architecture.html">↗ Two-Stage Memory Architecture</a>
+        <a class="paper-link" href="/writing/2026/02/15/four-tier-memory-taxonomy.html">↗ Four-Tier Memory Taxonomy</a>
+      </td>
+      <td class="persist-cell">
+        <span class="cell-title">Cross-session belief validity; longitudinal coherence</span>
+        <span class="cell-body">When agents span sessions, staleness is the default state, not an edge case. The system must detect when standing memory no longer reflects the world, not just when a session ends.</span>
+        <br><span class="frontier-badge">Frontier</span>
+      </td>
+    </tr>
+    <tr class="row-doing">
+      <td class="domain-cell">Doing</td>
+      <td class="session-cell">
+        <span class="cell-title">Tool/skill selection &amp; execution within a task</span>
+        <span class="cell-body">E2E quality is a multiplicative function of three layers: contract quality (clean, non-overlapping descriptions), execution quality (the tool does what it claims), and orchestration-time selection. Optimizing only selection — where most current effort concentrates — yields limited gains if the upstream layers remain unaddressed.</span>
+        <br><a class="paper-link" href="/writing/2026/03/31/quality-architecture-skills-tools.html">↗ Quality Architecture for Skills &amp; Tools</a>
+      </td>
+      <td class="persist-cell">
+        <span class="cell-title">Capability governance across tasks; evolving registries</span>
+        <span class="cell-body">Over long task horizons, tools version, deprecate, and fail in ways that session-scoped frameworks don't anticipate. Authorization semantics — did the intent that called this tool still hold three steps later? — become a first-class concern.</span>
+        <br><span class="frontier-badge">Frontier</span>
+      </td>
+    </tr>
+    <tr class="row-deciding">
+      <td class="domain-cell">Deciding</td>
+      <td class="session-cell">
+        <span class="cell-title">Planning &amp; reasoning within a turn sequence</span>
+        <span class="cell-body">Three patterns dominate: ReAct (interleaved think/act/observe), Plan-then-Execute (upfront decomposition), and Reflexion (self-critique and replan). The less-understood part is the discipline separation: prompt engineering governs how the LLM is instructed; context engineering governs what it reasons over; harness engineering governs how the loop runs and recovers from failure. Conflating these produces failure modes that are nearly impossible to diagnose.</span>
+      </td>
+      <td class="persist-cell">
+        <span class="cell-title">Long-horizon steerability; goal validity &amp; human interruption</span>
+        <span class="cell-body">The hardest cell. Steerability — as an architectural property of the runtime layer, distinct from training-time alignment — requires a live representation of the agent's intended future actions as the designated insertion point for human interrupts. Without it, correction is destructive rather than additive.</span>
+        <br><span class="frontier-badge">Frontier</span>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p class="term-note"><strong>On terminology:</strong> "Long-running" dominates in engineering practice (SWE-Bench Pro, Anthropic's usage guidelines); "always-on" better captures the persistent-state intent but implies continuous execution that doesn't always hold. <em>Persistent / long-running</em> bridges both.</p>
+
+<hr class="soft">
+<div class="section">
+  <div class="section-label">Session-Based · Knowing</div>
+  <h2>Where the Memory Innovation Actually Lives</h2>
+</div>
+
+<p>The two-stage memory pipeline — asynchronous generation followed by inference-time selection — is now a shared engineering assumption in production systems. Separating generation from retrieval, and amortizing generation cost across many downstream queries, is well-understood. That part is no longer the frontier.</p>
+
+<p>The open problem is the <em>source</em> of memory generation. When agents interact through human-bot conversation, every exchange is a candidate memory artifact — the transcript is the trace. But as agents increasingly operate through MCP tool calls, multi-agent exchanges, and autonomous task execution, the interaction record is no longer a conversation. It is a structured artifact stream: tool outputs, plan traces, intermediate states, inter-agent messages.</p>
+
+<div class="insight">
+  <strong>The key shift:</strong> Human-bot systems can afford to process the full transcript — it's computationally tractable and the signal is relatively dense. Non-human-bot interactions at scale cannot take the same approach: a raw tool trace is high-volume, low-signal-density, and often structurally ambiguous. The system needs to decide, agentically, <em>what from this artifact stream is worth distilling into standing memory</em> — and that decision requires understanding task intent, execution outcome, and downstream relevance. The published, production-grade architecture for this specific problem remains sparse in the literature, which is a genuine gap relative to the conversational memory case.
+</div>
+
+<p>The four-tier memory taxonomy — semantic, episodic, procedural, and <em>prospective</em> — provides the target structure for this distillation. Prospective memory (deferred commitments, pending decisions, upcoming deadlines) is the tier most absent from deployed systems and the one that matters most as agents persist across sessions. The architecture and taxonomy are detailed in linked papers.</p>
+
+<hr class="soft">
+<div class="section">
+  <div class="section-label">Session-Based · Doing</div>
+  <h2>Three Layers, One Metric</h2>
+</div>
+
+<p>Tool and skill selection is usually framed as a retrieval problem: given a query, rank available capabilities and invoke the best match. This framing misses two upstream failure modes that selection cannot compensate for.</p>
+
+<p>The first is <strong>contract quality</strong>: if tool descriptions overlap, are ambiguous, or fail to specify scope, no retrieval mechanism produces clean selection — semantic noise propagates downstream. The second is <strong>execution quality</strong>: a correctly selected tool that fails silently, or succeeds on a narrower version of what it claims, degrades E2E task completion in ways nearly impossible to attribute post-hoc.</p>
+
+<div class="equation-box">
+  P(E2E success) = P(clean contract) × P(tool succeeds | called) × P(right tool selected)
+</div>
+
+<p>All three layers are multiplicative. Optimizing only the third factor is the most common architectural mistake in production agentic systems. Recent benchmarks underscore the severity: across 550+ real-world tools, even frontier models achieve below 60% selection accuracy under realistic noisy conditions. The problem is not model capability — it is that upstream contract quality makes the selection problem unnecessarily hard. The full three-layer framework is in a linked paper.</p>
+
+<hr class="soft">
+<div class="section">
+  <div class="section-label">Session-Based · Deciding</div>
+  <h2>Planning, Reasoning, and the Control Loop</h2>
+</div>
+
+<p>The deciding layer is the control flow that bridges Knowing → Doing → back to Knowing, iteratively, toward a goal. The three dominant patterns — ReAct, Plan-then-Execute, and Reflexion — are well-known. The less-examined issue is the discipline separation that determines which failure mode you're debugging when something goes wrong.</p>
+
+<p><strong>Prompt engineering</strong> governs how the LLM is instructed. <strong>Context engineering</strong> governs what information it reasons over — what gets retrieved from the Knowing layer, how it's compressed, in what order it's injected. <strong>Harness engineering</strong> — Mitchell Hashimoto's term for the orchestration loop infrastructure — governs how the loop runs and recovers from failure. A system that has wrong tool calls has a prompt engineering problem. A system that hallucinates because it lacks relevant facts has a context engineering problem. A system that gets stuck in infinite retry loops has a harness engineering problem. These look similar from the outside and require different interventions.</p>
+
+<p>The four-tier memory taxonomy maps directly onto this layer: semantic memory feeds the planner; episodic memory feeds the step-level reasoner; procedural memory is the tool schema the planner reasons over; and <strong>prospective memory is the plan itself</strong> — the agent's live representation of its intended future actions. This mapping is why prospective memory bridges the session-based and persistent Deciding cells: it is the primitive that makes long-horizon steerability tractable.</p>
+
+<hr class="soft">
+<div class="section">
+  <div class="section-label">Persistent / Long-Running</div>
+  <h2>The Frontier Column</h2>
+</div>
+
+<p>When agents maintain state across sessions, the problems in each row don't merely scale — they change qualitatively. Stale context becomes a structural hazard. Tool authorization outlives the intent that triggered it. Decisions must remain correctable at arbitrary points in long trajectories.</p>
+
+<p>The core difficulty: in a session-based system, the context window is the audit surface — everything the agent knows, is doing, and has decided fits in one bounded artifact. In a persistent system, the agent's epistemic state is distributed across memory stores, tool execution histories, and partially completed plans, none of which automatically stays coherent as time passes, models update, or user intent evolves.</p>
+
+<p>These cells are explored in a companion paper currently in preparation: <em>Agent Epistemic Integrity: A Unified Framework for Knowing, Doing, and Deciding Across the Session-to-Always-On Transition</em>. The core argument: the three domains are not independent problems with independent solutions. They are three faces of one invariant problem, and the session-to-persistent transition is the stress test that reveals what each domain truly requires.</p>
+
+<hr class="soft">
+<div class="section">
+  <div class="section-label">Cross-Cutting Constraints</div>
+  <h2>Two Horizontal Layers</h2>
+</div>
+
+<div class="horizontals">
+  <div class="h-card model">
+    <div class="h-card-label">Model Layer</div>
+    <div class="h-card-title">A source of instability, not a stable substrate</div>
+    <p>Foundation models change — through updates, fine-tuning, and replacement. A runtime architecture with epistemic logic embedded in prompts is re-engineered every time the model changes. Stable systems define epistemic properties at the system level — the uncertainty audit trail, the memory retrieval contract, the tool selection criteria. The model executes against those definitions; it does not embody them.</p>
+  </div>
+  <div class="h-card econ">
+    <div class="h-card-label">Economics Layer</div>
+    <div class="h-card-title">A real-time optimization constraint</div>
+    <p>Inference costs are neither fixed nor ignorable. A principled runtime allocates compute as a function of confirmed grounding: steps with high epistemic confidence proceed with shallow deliberation; steps with high assumption density trigger deeper reasoning or human escalation. This is uncertainty-gated execution — a property of the architecture made operational, not a heuristic applied post-hoc.</p>
+  </div>
+</div>
+
+<hr class="soft">
+<div class="section">
+  <div class="section-label">Why This Framing Matters Now</div>
+  <h2>The Transition Is Underway</h2>
+</div>
+
+<p>Production deployments are moving from single-turn assistants to persistent agents that manage calendars, draft and send communications, execute code, and take consequential actions over hours or days. The failure modes of these systems are not model failures. They are runtime failures — failures in the layer responsible for knowing, doing, and deciding.</p>
+
+<p>The field currently has frameworks for memory (fragmented), frameworks for tool use (nascent), and frameworks for alignment and oversight (largely theoretical at the deployment layer). It does not have a unified account of how these three domains constrain one another, or why that constraint tightens specifically at the session-to-persistent boundary. The 3×2 grid is intended to make that constraint visible.</p>
+
+<hr class="soft">
+
+<div class="closing-pull">The session-based cells have working solutions. The persistent cells have the right questions. The Deciding row — at both timescales — is where the most consequential unsolved problems live.</div>
+
+<p>An agent that pursues an outdated goal with high confidence and low per-step error rate is, from a runtime integrity standpoint, failing — even if each individual action scores well. The invariant problem is not any single cell. It is whether what the agent knows, does, and decides remains <em>coherent, correctable, and aligned with user intent across time</em>.</p>
+
+<p>That property has a name: <strong>Agent Epistemic Integrity</strong>. The work of operationalizing it — across all six cells, both horizontal layers, and the session-to-persistent transition — is what comes next.</p>
+
+<footer class="footer">
+  <p><strong>Related work:</strong>
+    <a href="/writing/2026/02/01/two-stage-memory-architecture.html">Two-Stage Agentic Memory Generation Architecture</a> ·
+    <a href="/writing/2026/02/15/four-tier-memory-taxonomy.html">A Four-Tier Memory Taxonomy for Enterprise Agentic Systems</a> ·
+    <a href="/writing/2026/03/31/quality-architecture-skills-tools.html">Quality Architecture for Agentic Skills and Tools</a> ·
+    <a href="#">Agent Epistemic Integrity (companion whitepaper, forthcoming)</a>
+  </p>
+  <p style="margin-top:8px;">April 2026 · Independent research perspective.</p>
+  <p style="margin-top:12px; padding-top:12px; border-top: 1px solid #e8e8e8;"><strong>What's next:</strong> Hermes Agent (Nous Research) and OpenClaw are now concrete instantiations of the persistent / long-running column — real deployed systems facing the memory coherence, tool governance, and steerability problems described here. A forthcoming analysis examines how these systems implement (or fall short of) each cell of the framework, and introduces a quality concern the current papers don't yet cover: auto-generated skills, where the agent writes both the contract and the implementation from its own task traces, with no human review of either.</p>
+</footer>
+{% include site-footer.html %}
+</article>
+</body>
+</html>

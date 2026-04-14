@@ -1,0 +1,326 @@
+---
+layout: null
+title: "Quality Architecture for Agentic Skills and Tools"
+date: 2026-03-31
+categories: [writing]
+description: "End-to-end quality in agentic tool use is a multiplicative function of three layers: contract quality, execution quality, and orchestration-time selection. Optimizing selection alone — where most current effort concentrates — yields limited gains if the upstream layers remain unaddressed."
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quality Architecture for Agentic Skills and Tools</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background: #fff; color: #1a1a1a; font-size: 16px;
+    line-height: 1.75; padding: 52px 24px 88px;
+  }
+  .article { max-width: 760px; margin: 0 auto; }
+
+  .header { border-bottom: 2.5px solid #1a1a1a; padding-bottom: 22px; margin-bottom: 38px; }
+  .eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #999; margin-bottom: 12px; }
+  h1 { font-size: 29.5px; font-weight: 700; line-height: 1.2; letter-spacing: -.02em; margin-bottom: 11px; }
+  .subtitle { font-size: 16px; color: #555; line-height: 1.6; margin-bottom: 18px; max-width: 620px; }
+  .meta { font-size: 12.5px; color: #bbb; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .meta-tag { display: inline-block; font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; background: #f0f0ee; color: #666; padding: 2px 8px; border-radius: 4px; }
+
+  p { margin-bottom: 18px; color: #2a2a2a; }
+  .abstract { background: #f9f9f7; border: 1px solid #e4e4e0; border-radius: 8px; padding: 18px 22px; margin-bottom: 36px; font-size: 15.5px; line-height: 1.75; color: #333; }
+  .abstract-label { font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #999; margin-bottom: 8px; }
+
+  .section { margin-top: 44px; margin-bottom: 18px; }
+  .section-label { display: inline-block; background: #1a1a1a; color: #fff; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 3px 10px; border-radius: 3px; margin-bottom: 9px; }
+  h2 { font-size: 19.5px; font-weight: 700; letter-spacing: -.01em; line-height: 1.3; margin-bottom: 14px; }
+
+  hr.soft { border: none; border-top: 1px solid #efefef; margin: 40px 0; }
+
+  /* Equation */
+  .equation-box { background: #f5f5f3; border-left: 3px solid #1a1a1a; border-radius: 0 6px 6px 0; padding: 14px 20px; margin: 20px 0 24px; font-family: 'Georgia', serif; font-style: italic; font-size: 17px; color: #1a1a1a; }
+
+  /* Three-layer cards */
+  .layers { display: flex; flex-direction: column; gap: 0; margin: 24px 0 32px; border: 1px solid #e0e0de; border-radius: 10px; overflow: hidden; }
+  .layer-card { padding: 18px 22px; border-bottom: 1px solid #e8e8e6; }
+  .layer-card:last-child { border-bottom: none; }
+  .layer-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+  .layer-num { font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+  .layer-name { font-size: 16.5px; font-weight: 700; }
+  .layer-tag { font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; margin-left: auto; }
+  .layer-body { font-size: 15px; color: #333; line-height: 1.7; }
+  .layer-metrics { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .metric-pill { font-size: 12px; background: rgba(0,0,0,.06); padding: 2px 9px; border-radius: 20px; color: #444; font-weight: 500; }
+
+  /* Layer color themes */
+  .layer-1 { background: #f7fbff; }
+  .layer-1 .layer-num, .layer-1 .layer-name { color: #1a4a8a; }
+  .layer-1 .layer-tag { background: #cce5ff; color: #1a4a8a; }
+  .layer-2 { background: #f4fcf7; }
+  .layer-2 .layer-num, .layer-2 .layer-name { color: #145c33; }
+  .layer-2 .layer-tag { background: #b8e8cc; color: #145c33; }
+  .layer-3 { background: #f9f6ff; }
+  .layer-3 .layer-num, .layer-3 .layer-name { color: #4a1fa8; }
+  .layer-3 .layer-tag { background: #d0bfff; color: #4a1fa8; }
+
+  /* Data table */
+  .data-wrap { overflow-x: auto; margin: 20px 0; border: 1px solid #e4e4e0; border-radius: 8px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  thead th { background: #f5f5f3; padding: 10px 14px; text-align: left; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #555; border-bottom: 2px solid #e0e0e0; }
+  tbody td { padding: 11px 14px; border-bottom: 1px solid #f0f0ee; vertical-align: top; line-height: 1.6; color: #333; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) td { background: #fafaf8; }
+
+  /* Benchmarks callout */
+  .benchmark { background: #fff8ee; border: 1px solid #fcd89a; border-radius: 8px; padding: 14px 18px; margin: 18px 0; font-size: 14.5px; color: #4a2800; line-height: 1.7; }
+  .benchmark strong { color: #1a1a1a; }
+
+  /* Prescription list */
+  .prescriptions { display: flex; flex-direction: column; gap: 14px; margin: 20px 0; }
+  .prescription { border-left: 3px solid #e0e0e0; padding-left: 16px; }
+  .prescription h3 { font-size: 15.5px; font-weight: 700; margin-bottom: 5px; color: #1a1a1a; }
+  .prescription p { font-size: 15px; margin-bottom: 0; color: #333; }
+  .prescription:nth-child(1) { border-left-color: #3b82f6; }
+  .prescription:nth-child(2) { border-left-color: #22c55e; }
+  .prescription:nth-child(3) { border-left-color: #a855f7; }
+  .prescription:nth-child(4) { border-left-color: #f59e0b; }
+
+  .footer { margin-top: 52px; padding-top: 16px; border-top: 1px solid #eaeaea; font-size: 12.5px; color: #bbb; line-height: 1.9; }
+  .footer a { color: #999; text-decoration: underline; }
+
+  /* === Site navigation === */
+  .site-nav { display:flex; align-items:center; justify-content:space-between; padding:14px 0 16px; border-bottom:1px solid #e0e0dc; margin-bottom:40px; }
+  .site-nav-home { font-weight:600; font-size:15px; font-family:Georgia,serif; color:#1a1a1a; text-decoration:none; letter-spacing:-.01em; }
+  .site-nav-links { display:flex; gap:22px; }
+  .site-nav-links a { font-size:14px; color:#777; text-decoration:none; }
+  .site-nav-links a:hover, .site-nav-home:hover { color:#1a1a1a; text-decoration:underline; }
+  .site-footer-nav { margin-top:36px; padding-top:14px; border-top:1px solid #eaeaea; font-size:12px; color:#bbb; text-align:center; }
+  .site-footer-nav a { color:#999; text-decoration:none; margin:0 4px; }
+  .site-footer-nav a:hover { color:#555; }
+</style>
+</head>
+<body>
+<article class="article">
+<nav class="site-nav">
+  <a class="site-nav-home" href="/">Iris Axon Lab</a>
+  <div class="site-nav-links">
+    <a href="/">About</a>
+    <a href="/posts/">Writing</a>
+    <a href="/projects/">Projects</a>
+    <a href="/notes/">Notes</a>
+  </div>
+</nav>
+
+<header class="header">
+  <div class="eyebrow">Technical Analysis · Capability Engineering</div>
+  <h1>Quality Architecture for Agentic Skills and Tools</h1>
+  <p class="subtitle">A three-layer framework for contract quality, execution reliability, and orchestration-time selection — and why optimizing only the third layer is insufficient without addressing the upstream layers.</p>
+  <div class="meta">
+    <span>April 2026</span>
+    <span class="meta-tag">Tool Quality</span>
+    <span class="meta-tag">Agentic Systems</span>
+    <span class="meta-tag">Production Architecture</span>
+  </div>
+</header>
+
+<div class="abstract">
+  <div class="abstract-label">Abstract</div>
+  Tool and skill selection accuracy in agentic systems is lower than commonly assumed — recent benchmarks report below 60% accuracy for frontier models across realistic tool registries — and most current engineering effort targets only the retrieval layer. This paper argues that selection quality is a lagging indicator: it is determined upstream by contract quality (how well tools are specified) and execution quality (how reliably tools perform). These three layers compose multiplicatively, which means that local optimization of any one layer produces diminishing returns if the others are degraded. We present a three-layer quality framework, a decision model for when to use atomic tools versus composed skills, and four concrete prescriptions for production agentic systems.
+</div>
+
+<div class="section">
+  <div class="section-label">The Problem</div>
+  <h2>Selection Accuracy Is a Downstream Symptom</h2>
+</div>
+
+<p>Agentic platforms — whether consumer-facing assistants, enterprise productivity tools, or developer environments — share a common architectural pattern: an LLM-based orchestrator selects from a registry of available capabilities (tools and skills) to accomplish user tasks. The quality of this selection, and the reliability of the selected capability, determines system-level performance.</p>
+
+<p>The engineering community has focused heavily on the selection layer: better embeddings, smarter routing, richer metadata. This focus is understandable but misplaced as a primary strategy. Selection quality is bounded by the upstream layers. A well-specified tool with a reliable execution record is easy to route to correctly. A poorly specified tool that overlaps with adjacent capabilities creates an ambiguity that no retrieval mechanism can cleanly resolve.</p>
+
+<div class="benchmark">
+  <strong>The empirical case:</strong> The MCP-Bench benchmark (ICLR 2026) evaluated frontier models across 28 MCP servers with 250 tools under realistic noisy conditions and found significant struggles with tool selection and dependency chain compliance. MCPVerse reported that the top-performing model (Claude Sonnet, early 2026) achieved only 57.77% accuracy across 550+ real-world tools. A University of Alberta study (February 2026) found that improving tool description quality yielded a 5.85 percentage-point improvement in task success — but also a 67.46% increase in execution steps, revealing a fundamental accuracy-cost tradeoff that better retrieval alone cannot resolve. These numbers would be unacceptable in most production workflows.
+</div>
+
+<p>The underlying cause is not model capability. It is that tool registries accumulate quality debt across all three layers simultaneously, and most teams have no systematic way to measure or address the upstream debt.</p>
+
+<hr class="soft">
+<div class="section">
+  <div class="section-label">The Framework</div>
+  <h2>Three Layers, One Metric</h2>
+</div>
+
+<p>Tool and skill quality must be evaluated across three distinct but interconnected layers. The layers compose multiplicatively — weak performance at any layer propagates downstream and cannot be recovered by the others.</p>
+
+<div class="equation-box">
+  P(E2E success) = P(clean contract) × P(tool succeeds | called) × P(right tool selected)
+</div>
+
+<div class="layers">
+
+  <div class="layer-card layer-1">
+    <div class="layer-header">
+      <span class="layer-num">Layer 1</span>
+      <span class="layer-name">Contract Quality</span>
+      <span class="layer-tag">The Specification Layer</span>
+    </div>
+    <div class="layer-body">
+      A tool's contract is the specification that tells the orchestrator what the capability does, when to use it, and what inputs/outputs to expect. Contract quality fails in three ways: ambiguous descriptions that don't clearly bound the capability's scope; overlapping descriptions that create retrieval confusion with adjacent tools; and schema incompleteness that causes runtime errors on legitimate inputs.
+      <br><br>
+      GitHub's engineering team found that small edits to tool descriptions — tightening scope, separating overlapping tools, adding context about when <em>not</em> to use a tool — produced significant selection improvements. An independent analysis of a major AI platform's published tool registry found that several tools failed basic spec compliance criteria (schema completeness, non-overlapping descriptions) — suggesting contract debt is common even in carefully maintained registries.
+      <div class="layer-metrics">
+        <span class="metric-pill">Description clarity score</span>
+        <span class="metric-pill">Schema completeness</span>
+        <span class="metric-pill">Overlap coefficient with adjacent tools</span>
+        <span class="metric-pill">LLM-judge invocation correctness</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="layer-card layer-2">
+    <div class="layer-header">
+      <span class="layer-num">Layer 2</span>
+      <span class="layer-name">Execution Quality</span>
+      <span class="layer-tag">The Runtime Reliability Layer</span>
+    </div>
+    <div class="layer-body">
+      Execution quality measures whether a tool actually does what its contract claims, at the rate it claims, under realistic input distributions. A tool can have a perfect contract and still fail at execution — through silent failures, partial success (succeeds on a narrow subset of valid inputs), inconsistent latency, or poor error handling that leaves the orchestrator with no actionable signal.
+      <br><br>
+      Silent failures are the most dangerous: the orchestrator proceeds as if the tool succeeded, builds further actions on a false premise, and compounds error. Any production agentic system should treat silent failure detection as a first-class instrumentation requirement, not an afterthought. The orchestrator should always receive an explicit success/failure signal and a structured error payload it can reason over.
+      <div class="layer-metrics">
+        <span class="metric-pill">Task success rate</span>
+        <span class="metric-pill">Silent failure rate</span>
+        <span class="metric-pill">p50 / p99 latency</span>
+        <span class="metric-pill">Error payload quality</span>
+        <span class="metric-pill">Input distribution coverage</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="layer-card layer-3">
+    <div class="layer-header">
+      <span class="layer-num">Layer 3</span>
+      <span class="layer-name">Orchestration-Time Selection Quality</span>
+      <span class="layer-tag">The Routing Layer</span>
+    </div>
+    <div class="layer-body">
+      Selection quality measures whether the orchestrator routes a given task to the right tool, across the full distribution of task types in production. This is the layer that has received the most engineering attention — embedding-based retrieval, reranking, routing heuristics. It is also the layer most constrained by Layers 1 and 2: selection precision is bounded by contract clarity, and selection recall is bounded by the tool's actual execution coverage.
+      <br><br>
+      An important secondary effect: selection precision simultaneously functions as the primary per-query token cost control. A system that loads 40 tools into the prompt for every query — because it cannot confidently select the right 3–5 — is not just paying a quality cost. It is paying a direct inference cost on every request.
+      <div class="layer-metrics">
+        <span class="metric-pill">Precision @ k</span>
+        <span class="metric-pill">Recall across task distribution</span>
+        <span class="metric-pill">False positive rate</span>
+        <span class="metric-pill">Active tool count per query (token cost proxy)</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<hr class="soft">
+<div class="section">
+  <div class="section-label">Design Decision</div>
+  <h2>Atomic Tools vs. Composed Skills</h2>
+</div>
+
+<p>A related architectural question with significant quality implications: when should a capability be implemented as an atomic tool (a single function with a defined contract) versus a composed skill (a multi-step workflow encoding a task pattern)?</p>
+
+<div class="data-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Dimension</th>
+      <th>Atomic Tool</th>
+      <th>Composed Skill</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Contract clarity</strong></td>
+      <td>High — bounded scope, single action</td>
+      <td>Lower — multi-step scope harder to specify without ambiguity</td>
+    </tr>
+    <tr>
+      <td><strong>Execution quality measurement</strong></td>
+      <td>Straightforward — success/failure is well-defined</td>
+      <td>Complex — partial success, step-level vs. task-level quality</td>
+    </tr>
+    <tr>
+      <td><strong>Selection precision</strong></td>
+      <td>Higher for narrow task types</td>
+      <td>Higher for complex task patterns with implicit ordering</td>
+    </tr>
+    <tr>
+      <td><strong>Token cost at selection time</strong></td>
+      <td>Lower per-tool schema size</td>
+      <td>Higher — skill description must encode workflow intent</td>
+    </tr>
+    <tr>
+      <td><strong>Maintenance burden</strong></td>
+      <td>Low — changes are isolated</td>
+      <td>Higher — workflow changes require full regression</td>
+    </tr>
+    <tr>
+      <td><strong>Best for</strong></td>
+      <td>Deterministic, well-scoped operations</td>
+      <td>Recurring task patterns with implicit ordering and user-preference encoding</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>A useful heuristic: if the capability requires the orchestrator to make meaningful decisions about ordering, branching, or fallback within its execution, it is a skill. If the decision-making belongs entirely to the orchestrator (and the capability simply executes a defined action when called), it is a tool. Mis-categorizing — typically encoding orchestrator-level decisions inside a tool — is a common source of contract ambiguity at Layer 1.</p>
+
+<hr class="soft">
+<div class="section">
+  <div class="section-label">Prescriptions</div>
+  <h2>What This Implies for System Builders</h2>
+</div>
+
+<div class="prescriptions">
+
+  <div class="prescription">
+    <h3>Treat contract quality as a pre-deployment gate, not a launch assumption</h3>
+    <p>Every tool or skill added to a production registry should pass a contract quality check before deployment: description specificity audit, schema completeness validation, overlap analysis against existing registry entries. This is analogous to a type system or a lint pass — it catches a class of errors before they compound in production. Teams that skip this step consistently report high false-positive rates in their orchestration layer and cannot isolate whether the cause is retrieval quality or contract ambiguity.</p>
+  </div>
+
+  <div class="prescription">
+    <h3>Instrument silent failures as a first-class production signal</h3>
+    <p>Every tool call should produce an explicit success/failure signal, a structured error payload, and a confidence indicator where applicable. Silent failures — where the tool returns a result but the result does not reflect actual task completion — are the hardest to detect and the most damaging to compound tasks. Treat any tool that can fail silently as a Layer 2 debt item requiring immediate remediation, regardless of how well-specified its contract is.</p>
+  </div>
+
+  <div class="prescription">
+    <h3>Measure active tool count per query as a cost and quality proxy</h3>
+    <p>The number of tools loaded into the orchestrator's context window per query is a cheap, continuous proxy for both selection quality and token cost. A well-maintained registry with high contract quality should allow the orchestrator to confidently select 3–5 tools for most queries. If the median active tool count is 20+, this signals contract overlap or insufficient registry curation — and the token cost implication is direct and compounding across query volume.</p>
+  </div>
+
+  <div class="prescription">
+    <h3>Evaluate at the E2E task level, not the per-tool level</h3>
+    <p>Individual tool success rates are necessary but not sufficient as quality metrics. A tool that succeeds 95% of the time but is selected for the wrong task class 30% of the time has a compound E2E success rate well below 95%. The P(E2E success) formula above requires estimating all three factors. Teams that measure only Layer 3 (selection accuracy) or only Layer 2 (per-tool success rate) will consistently misattribute their E2E quality problems to the wrong layer.</p>
+  </div>
+
+</div>
+
+<hr class="soft">
+<div class="section">
+  <div class="section-label">Broader Context</div>
+  <h2>The Registry Scale Challenge</h2>
+</div>
+
+<p>The quality framework above is tractable for curated, organization-managed registries. The challenge compounds significantly at ecosystem scale. The open-source tool ecosystem has grown rapidly, with major registries hosting tens of thousands of community-built skills. Analysis of these registries suggests that a meaningful fraction are low-quality by the Layer 1 and Layer 2 criteria above — and that the registry discovery problem (how does an orchestrator find the right tool across a large heterogeneous registry?) is itself a Layer 3 challenge that current retrieval approaches do not fully solve.</p>
+
+<p>A secondary concern at ecosystem scale: tool quality is also a security surface. Several documented supply-chain incidents in community registries have involved malicious tools using typosquatted names — exploiting the fact that the orchestrator selects by name similarity and description match, not by provenance verification. For enterprise deployments, registry provenance and signing should be treated as Layer 1 contract attributes, not as out-of-scope infrastructure concerns.</p>
+
+<footer class="footer">
+  <p><strong>Related work:</strong>
+    <a href="/writing/2026/04/12/agentic-runtime-layer.html">The Agentic Runtime Layer: A Framework for How Agents Know, Do, and Decide</a> ·
+    <a href="/writing/2026/02/01/two-stage-memory-architecture.html">Two-Stage Agentic Memory Generation Architecture</a> ·
+    <a href="/writing/2026/02/15/four-tier-memory-taxonomy.html">A Four-Tier Memory Taxonomy for Enterprise Agentic Systems</a> ·
+    <a href="#">Agent Epistemic Integrity (companion whitepaper, forthcoming)</a>
+  </p>
+  <p style="margin-top:8px;">April 2026 · Independent research perspective.</p>
+</footer>
+{% include site-footer.html %}
+</article>
+</body>
+</html>

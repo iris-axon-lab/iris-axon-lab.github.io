@@ -8,6 +8,34 @@ Loosely structured thinking. Some of this will become posts. Some of it won't.
 
 ---
 
+### Builder's notes
+
+{% assign builder_posts = "" | split: "" %}
+{% if site.categories.builders %}
+  {% assign builder_posts = site.categories.builders | sort: 'date' | reverse %}
+{% endif %}
+{% for post in builder_posts %}
+### [{{ post.title }}]({{ post.url }})
+*{{ post.date | date: "%B %d, %Y" }}*
+
+{{ post.description }}
+
+{% endfor %}
+
+---
+
+### Learner notes
+
+{% for post in site.categories.notes %}
+### [{{ post.title }}]({{ post.url }})
+*{{ post.date | date: "%B %d, %Y" }}*
+
+{{ post.description }}
+
+{% endfor %}
+
+---
+
 ### On agentic systems
 
 - The hardest part of long-running tasks isn't execution — it's knowing when to stop, restart, or ask.
@@ -33,3 +61,5 @@ Loosely structured thinking. Some of this will become posts. Some of it won't.
 ---
 
 *Updated irregularly. Last touched April 2026.*
+
+
