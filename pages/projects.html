@@ -1,0 +1,259 @@
+---
+layout: null
+title: "Projects"
+permalink: /projects/
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projects — Iris Shen</title>
+<meta name="description" content="Things built, architected, or thought too hard about — from agentic memory systems to billion-scale knowledge graphs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Martian+Mono:wght@300;400&family=Lora:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:          #f5f2eb;
+  --ink:         #1c1a12;
+  --ink2:        rgba(28,26,18,0.72);
+  --ink3:        rgba(28,26,18,0.52);
+  --ink4:        rgba(28,26,18,0.22);
+  --accent:      #8b4513;
+  --accent-soft: rgba(139,69,19,0.09);
+  --rule:        rgba(28,26,18,0.12);
+  --serif:       'Cormorant Garamond', Georgia, serif;
+  --mono:        'Martian Mono', 'Courier New', monospace;
+  --body:        'Lora', Georgia, serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 18px;
+  line-height: 1.8;
+  min-height: 100vh;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.022'/%3E%3C/svg%3E");
+}
+
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 1rem 2.5rem;
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(245,242,235,0.90);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--rule);
+}
+.nav-mark {
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  font-style: normal;
+  color: var(--ink);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-mark:hover { color: var(--accent); }
+.nav-links { display: flex; gap: 2rem; }
+.nav-links a {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--ink2);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--ink); }
+.nav-links a.active { color: var(--ink); }
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 2rem 5rem;
+}
+
+.page-header {
+  padding-top: 120px;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.page-title {
+  font-family: var(--serif);
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 300;
+  color: var(--ink);
+  line-height: 1.1;
+  margin-bottom: 0.6rem;
+}
+
+.page-desc {
+  font-family: var(--body);
+  font-size: 1rem;
+  color: var(--ink2);
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.project-list { display: grid; gap: 0; }
+
+.project-item {
+  padding: 2rem 0;
+  border-bottom: 0.5px solid var(--rule);
+}
+.project-item:last-child { border-bottom: none; }
+
+.project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1.2rem;
+  margin-bottom: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.project-title {
+  font-family: var(--serif);
+  font-size: 1.45rem;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.2;
+}
+.project-title a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.project-title a:hover { color: var(--accent); }
+
+.project-era {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.project-desc {
+  font-family: var(--body);
+  font-size: 1rem;
+  color: var(--ink2);
+  line-height: 1.72;
+  max-width: 600px;
+}
+
+.meta-note {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink4);
+  margin-top: 2rem;
+}
+
+footer {
+  margin-top: 2.6rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--ink3);
+}
+footer a { color: var(--ink3); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+
+@media (max-width: 600px) {
+  nav { padding: 0.9rem 1.2rem; }
+  .page { padding: 0 1.2rem 4rem; }
+  .page-header { padding-top: 96px; }
+  .project-header { flex-direction: column; gap: 0.25rem; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-mark" href="/">Iris Axon Lab</a>
+  <div class="nav-links">
+    <a href="/posts/">Writing</a>
+    <a href="/projects/" class="active">Projects</a>
+    <a href="/notes/">Notes</a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <div class="page-header">
+    <h1 class="page-title">Projects</h1>
+    <p class="page-desc">Things I've built, architected, or thought too hard about.</p>
+  </div>
+
+  <div class="project-list">
+
+    <div class="project-item">
+      <div class="project-header">
+        <div class="project-title">
+          <a href="https://github.com/iris-axon-lab/trace" target="_blank">Trace — Longitudinal Witness Agent ↗</a>
+        </div>
+        <span class="project-era">Personal · 2026–present</span>
+      </div>
+      <p class="project-desc">A local-first longitudinal agent that reads AI conversation history and generates weekly narrative dispatches. Runs entirely on Ollama (qwen3:14b). Succeeds only when you feel witnessed — never when a task is completed. The design question it answers: what does memory look like when the goal is not recall but becoming?</p>
+    </div>
+
+    <div class="project-item">
+      <div class="project-header">
+        <div class="project-title">Agentic Memory Architecture</div>
+        <span class="project-era">Microsoft M365 Copilot · 2025–present</span>
+      </div>
+      <p class="project-desc">Designed a four-tier memory taxonomy (semantic, episodic, procedural, prospective) for agentic systems serving tens of millions of users. The prospective tier — forward-looking task memory — is the original contribution. Paired with a two-stage generation architecture that reduced hallucination and GPU costs significantly.</p>
+    </div>
+
+    <div class="project-item">
+      <div class="project-header">
+        <div class="project-title">Swarm-Based Evaluation Pipeline</div>
+        <span class="project-era">Microsoft M365 Copilot · 2026–present</span>
+      </div>
+      <p class="project-desc">A multi-agent eval system with specialized roles: Proposer, Critic, Scorer, Synthesizer. Compressed two weeks of human annotation to one agent-day without sacrificing coverage. Built to run continuously, not just at release gates.</p>
+    </div>
+
+    <div class="project-item">
+      <div class="project-header">
+        <div class="project-title">Tool &amp; Skill Quality Framework</div>
+        <span class="project-era">Microsoft M365 Copilot · 2026–present</span>
+      </div>
+      <p class="project-desc">Three-layer framework for assessing agentic tool quality: contract quality, execution success rate, and orchestration triggering accuracy. Designed to be measurable, not just principled. Full writeup in <a href="/writing/2026/03/31/quality-architecture-skills-tools.html">Quality Architecture for Agentic Skills and Tools</a>.</p>
+    </div>
+
+    <div class="project-item">
+      <div class="project-header">
+        <div class="project-title">Billion-Scale Academic Knowledge Graph</div>
+        <span class="project-era">Microsoft Research · prior</span>
+      </div>
+      <p class="project-desc">Built knowledge graphs at billion-node scale for academic literature. Adopted by the OECD and the Stanford AI Index as infrastructure for science-of-science research. Learned that knowledge representation is never just a data problem — it is always also a question of what you think knowledge is.</p>
+    </div>
+
+    <div class="project-item">
+      <div class="project-header">
+        <div class="project-title">Memory-as-Policy</div>
+        <span class="project-era">Personal research · 2025–present</span>
+      </div>
+      <p class="project-desc">Exploring preference optimization approaches — DPO, GRPO, and RLAIF — on small open-weight models to encode memory retrieval and generation behavior as learned policy rather than prompted behavior. Ongoing.</p>
+    </div>
+
+  </div>
+
+  <p class="meta-note">More to come · This page is itself a work in progress</p>
+
+  <footer>© Iris Shen · <a href="/">iris-axon-lab.github.io</a></footer>
+
+</div>
+
+</body>
+</html>

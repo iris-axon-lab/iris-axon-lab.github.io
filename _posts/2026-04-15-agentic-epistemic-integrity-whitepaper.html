@@ -1,0 +1,1021 @@
+---
+layout: null
+title: "Agent Epistemic Integrity"
+date: 2026-04-15
+categories: [writing]
+description: "A unified framework for Knowing, Doing, and Deciding across the session-to-long-running transition in agentic AI systems. Introduces prospective memory as the missing architectural primitive connecting memory, action, and steerability."
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Epistemic Integrity — Iris Shen</title>
+<meta name="description" content="A unified framework for Knowing, Doing, and Deciding across the session-to-long-running transition in agentic AI systems.">
+<meta property="og:title" content="Agent Epistemic Integrity">
+<meta property="og:description" content="A unified framework for Knowing, Doing, and Deciding across the session-to-long-running transition.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Martian+Mono:wght@300;400&family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=Noto+Serif+SC:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg:          #f5f2eb;
+  --bg2:         #ede9df;
+  --ink:         #1c1a12;
+  --ink2:        rgba(28,26,18,0.72);
+  --ink3:        rgba(28,26,18,0.52);
+  --ink4:        rgba(28,26,18,0.25);
+  --accent:      #8b4513;
+  --accent-soft: rgba(139,69,19,0.09);
+  --accent-mid:  rgba(139,69,19,0.22);
+  --rule:        rgba(28,26,18,0.12);
+  --serif:       'Cormorant Garamond', Georgia, serif;
+  --mono:        'Martian Mono', 'Courier New', monospace;
+  --body:        'Lora', Georgia, serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html {
+  scroll-behavior: smooth;
+  /* offset anchors so section headings clear the fixed nav */
+  scroll-padding-top: 5rem;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.84;
+  min-height: 100vh;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.028'/%3E%3C/svg%3E");
+}
+
+/* ── Nav — matches homepage ─────────────────────── */
+nav.site-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 14px 2.5rem 15px;
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(245,242,235,0.93);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--rule);
+}
+.nav-mark {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-weight: 400;
+  font-style: normal;
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  transition: color 0.2s;
+}
+.nav-mark:hover { color: var(--accent); }
+.nav-links { display: flex; gap: 22px; }
+.nav-links a {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink2);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Layout ─────────────────────────────────────── */
+.paper-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 6.5rem 2rem 6rem;
+}
+
+/* ── Paper header ────────────────────────────────── */
+.paper-header {
+  margin-bottom: 2.5rem;
+  opacity: 0; transform: translateY(16px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.paper-header.visible { opacity: 1; transform: none; }
+
+.paper-title {
+  font-family: var(--serif);
+  font-size: clamp(1.75rem, 4vw, 2.4rem);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  margin-bottom: 1.25rem;
+}
+.paper-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink3);
+  letter-spacing: 0.04em;
+}
+.paper-meta .sep { color: var(--ink4); }
+.paper-meta a { color: var(--ink3); text-decoration: none; }
+.paper-meta a:hover { color: var(--accent); }
+
+.header-rule {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: 2rem 0 2.5rem;
+}
+
+/* ── Abstract ────────────────────────────────────── */
+.abstract-section {
+  margin-bottom: 2.5rem;
+  padding: 1.5rem 1.75rem;
+  border-left: 2px solid var(--rule);
+  opacity: 0; transform: translateY(12px);
+  transition: opacity 0.5s ease 0.1s, transform 0.5s ease 0.1s;
+}
+.abstract-section.visible { opacity: 1; transform: none; }
+.abstract-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.8rem;
+}
+.abstract-text {
+  font-family: var(--body);
+  font-size: 15.5px;
+  line-height: 1.8;
+  color: var(--ink2);
+  font-style: italic;
+}
+.abstract-text p + p { margin-top: 0.9rem; }
+
+/* ── TOC — inline (mobile) and fixed sidebar (desktop) ── */
+.toc {
+  margin-bottom: 3rem;
+  padding: 1.2rem 1.4rem;
+  background: rgba(28,26,18,0.03);
+  border: 0.5px solid var(--rule);
+  border-radius: 4px;
+  opacity: 0; transform: translateY(10px);
+  transition: opacity 0.5s ease 0.15s, transform 0.5s ease 0.15s;
+}
+.toc.visible { opacity: 1; transform: none; }
+.toc-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.85rem;
+}
+.toc ol {
+  list-style: none;
+  padding: 0;
+  columns: 2;
+  column-gap: 2rem;
+}
+.toc li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  margin-bottom: 0.4rem;
+  break-inside: avoid;
+}
+.toc-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink4);
+  flex-shrink: 0;
+  width: 1.5rem;
+}
+.toc a {
+  font-size: 14px;
+  color: var(--ink3);
+  text-decoration: none;
+  transition: color 0.15s;
+  line-height: 1.5;
+}
+.toc a:hover { color: var(--accent); }
+
+/* Fixed sidebar TOC on wide screens */
+@media (min-width: 1200px) {
+  .toc {
+    position: fixed;
+    top: 5rem;
+    left: max(1rem, calc(50vw - 560px));
+    width: 175px;
+    max-height: calc(100vh - 6.5rem);
+    overflow-y: auto;
+    margin-bottom: 0;
+    /* slim scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule) transparent;
+  }
+  .toc::-webkit-scrollbar { width: 3px; }
+  .toc::-webkit-scrollbar-track { background: transparent; }
+  .toc::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 2px; }
+  /* single-column in sidebar */
+  .toc ol { columns: 1; column-gap: 0; }
+}
+
+/* ── Sections ────────────────────────────────────── */
+.paper-section {
+  margin-bottom: 3.25rem;
+  opacity: 0; transform: translateY(14px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.paper-section.visible { opacity: 1; transform: none; }
+
+h2.section-heading {
+  font-family: var(--serif);
+  font-size: 1.42rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 1.3rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 0.5px solid var(--rule);
+}
+.section-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink3);
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+h3.subsection-heading {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 2rem 0 0.8rem;
+}
+.subsection-num {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink3);
+  margin-right: 0.4rem;
+}
+
+p { margin-bottom: 1rem; }
+p:last-child { margin-bottom: 0; }
+
+/* ── Callout / Principle boxes ───────────────────── */
+.callout {
+  border-left: 2px solid var(--accent-mid);
+  padding: 1rem 1.2rem 1rem 1.35rem;
+  margin: 1.75rem 0;
+  background: var(--accent-soft);
+  border-radius: 0 4px 4px 0;
+}
+.callout p { margin-bottom: 0.55rem; }
+.callout p:last-child { margin-bottom: 0; }
+.callout strong {
+  font-family: var(--serif);
+  font-size: 0.97rem;
+  font-weight: 600;
+}
+
+/* ── Tables ──────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 1.75rem 0; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+thead tr {
+  border-bottom: 1px solid rgba(28,26,18,0.22);
+}
+thead th {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 14.5px;
+  text-align: left;
+  padding: 0.5rem 0.9rem 0.55rem;
+  color: var(--ink);
+}
+tbody tr {
+  border-bottom: 0.5px solid var(--rule);
+}
+tbody tr:last-child { border-bottom: none; }
+tbody td {
+  padding: 0.55rem 0.9rem;
+  color: var(--ink);
+  vertical-align: top;
+}
+tbody td:first-child { font-family: var(--serif); font-weight: 600; }
+
+.td-knowing { color: #2a5880; }
+.td-doing   { color: #582a80; }
+.td-deciding { color: #8b4513; }
+
+/* ── Code ────────────────────────────────────────── */
+code {
+  font-family: var(--mono);
+  font-size: 0.79em;
+  font-weight: 400;
+  background: rgba(28,26,18,0.07);
+  padding: 0.12em 0.42em;
+  border-radius: 3px;
+  color: var(--accent);
+  letter-spacing: 0.01em;
+}
+
+/* ── Figure ──────────────────────────────────────── */
+.figure {
+  margin: 2.25rem 0;
+  overflow-x: auto;
+}
+.figure-caption {
+  margin-top: 0.8rem;
+  font-size: 15px;
+  color: var(--ink2);
+  font-style: italic;
+  line-height: 1.65;
+}
+.figure-label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-right: 0.4rem;
+  font-style: normal;
+}
+
+/* ── Worked example weeks ────────────────────────── */
+.example-block {
+  margin: 1.5rem 0;
+  padding: 0.9rem 1.2rem;
+  border: 0.5px solid var(--rule);
+  border-radius: 4px;
+  background: rgba(28,26,18,0.025);
+}
+.week-marker {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.6rem;
+}
+
+/* ── References — flexbox for clean alignment ────── */
+.references-list {
+  list-style: none;
+  padding: 0;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--ink2);
+}
+.references-list li {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  padding: 0.6rem 0;
+  border-bottom: 0.5px solid var(--rule);
+}
+.references-list li:last-child { border-bottom: none; }
+.ref-tag {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--accent);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  min-width: 7.5rem;
+}
+
+/* ── Footer — matches homepage ───────────────────── */
+footer {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.4rem 2rem 3rem;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink3);
+  letter-spacing: 0.10em;
+}
+footer a { color: var(--ink3); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+.footer-zh {
+  font-family: 'Noto Serif SC', var(--serif);
+  font-size: 11px;
+  color: var(--ink4);
+  cursor: default;
+}
+.footer-zh abbr { text-decoration: none; border-bottom: 0.5px dotted var(--ink4); }
+.footer-zh abbr:hover { color: var(--ink3); }
+
+/* ── Utilities ───────────────────────────────────── */
+em { font-style: italic; }
+strong { font-weight: 500; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.cite { font-family: var(--mono); font-size: 0.78em; color: var(--ink3); vertical-align: super; line-height: 0; }
+
+/* ── Print ───────────────────────────────────────── */
+@media print {
+  nav { display: none; }
+  body { font-size: 11pt; background: white; }
+  .paper-container { padding-top: 1rem; }
+  .paper-section, .abstract-section, .paper-header, .toc { opacity: 1; transform: none; }
+  .toc { position: static; width: auto; max-height: none; }
+}
+
+/* ── Mobile ──────────────────────────────────────── */
+@media (max-width: 600px) {
+  nav.site-nav { padding: 12px 1.5rem; }
+  .paper-container { padding: 5.5rem 1.2rem 4rem; }
+  .toc ol { columns: 1; }
+}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="/" class="nav-mark">Iris Axon Lab</a>
+  <div class="nav-links">
+    <a href="/posts/">Writing</a>
+    <a href="/projects/">Projects</a>
+    <a href="/notes/">Notes</a>
+  </div>
+</nav>
+
+<div class="paper-container">
+
+  <!-- Paper header -->
+  <header class="paper-header">
+    <h1 class="paper-title">Agent Epistemic Integrity: A Unified Framework for Knowing, Doing, and Deciding Across the Session-to-Long-Running Transition</h1>
+    <div class="paper-meta">
+      <span>Iris Shen</span>
+      <span class="sep">·</span>
+      <span>April 2026</span>
+      <span class="sep">·</span>
+      <a href="https://iris-axon-lab.github.io">iris-axon-lab.github.io</a>
+    </div>
+  </header>
+
+  <hr class="header-rule">
+
+  <!-- Abstract -->
+  <div class="abstract-section">
+    <p class="abstract-label">Abstract</p>
+    <div class="abstract-text">
+      <p>As agentic AI systems extend from single-session interactions into long-running, persistent operation, they accumulate failures that no existing framework adequately explains: stale context treated as current, tool invocations that outlive their authorizing intent, and decisions made without any mechanism to be corrected. Existing approaches address memory, action, and governance as separate engineering concerns, leaving the structural relationship among them invisible.</p>
+      <p>This paper introduces <em>Agent Epistemic Integrity</em> (AEI) as a unified architectural property — the guarantee that what an agent knows, does, and decides remains coherent, correctable, and aligned with user intent across time. Three contributions follow. First, AEI is defined as a <em>stable invariant</em>: the requirement to maintain coherent, correctable epistemic state across Knowing, Doing, and Deciding does not change as models improve or mechanisms evolve, even as the volatile how changes continuously. Second, the session-to-long-running transition is the diagnostic stress test that reveals this requirement: steerability, reconceived not as a behavioral preference but as an architectural property, becomes structurally unsatisfiable without explicit runtime representation of forward intent. Third, <em>prospective memory</em> — the agent's live, queryable model of its own planned commitments — is the missing primitive that connects memory architecture to steerability across that transition.</p>
+      <p>Systems that treat Knowing, Doing, and Deciding as independent engineering tracks will fail at scale in the long-running regime. Systems that design for their joint coherence will not.</p>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <nav class="toc" aria-label="Table of contents">
+    <p class="toc-label">Contents</p>
+    <ol>
+      <li><span class="toc-num">1</span><a href="#introduction">Introduction</a></li>
+      <li><span class="toc-num">2</span><a href="#framework">The Framework</a></li>
+      <li><span class="toc-num">3</span><a href="#transition">Session-to-Long-Running Transition</a></li>
+      <li><span class="toc-num">4</span><a href="#prescriptions">Design Prescriptions</a></li>
+      <li><span class="toc-num">5</span><a href="#example">Worked Example</a></li>
+      <li><span class="toc-num">6</span><a href="#openproblems">Open Problems</a></li>
+      <li><span class="toc-num">7</span><a href="#related">Related Work</a></li>
+      <li><span class="toc-num">8</span><a href="#conclusion">Conclusion</a></li>
+      <li><span class="toc-num">—</span><a href="#references">References</a></li>
+    </ol>
+  </nav>
+
+  <!-- ── 1. Introduction ──────────────────────────── -->
+  <section class="paper-section" id="introduction">
+    <h2 class="section-heading"><span class="section-num">1</span>Introduction</h2>
+
+    <p>Consider a surgeon who, midway through a six-hour procedure, continues executing the original plan — even after the patient's condition has materially changed, after instruments have been swapped, and after the attending anesthesiologist has issued a revised recommendation. The surgeon is not malfunctioning. She is doing exactly what she was trained to do: complete the task. The failure is architectural. The system she operates within provided no mechanism to propagate new evidence into active intent, no checkpoint that asked whether the original authorization still held, and no shared representation of what "done" was supposed to mean. The outcome is not one bad decision but a cascade of locally reasonable actions built on a foundation that had silently shifted.</p>
+
+    <p>This is, in precise structural terms, what happens in long-running agentic AI systems today.</p>
+
+    <p>When an agent operates within a single session, the failure modes are contained. Context is fresh, tool calls are bounded, and the user is present to correct drift in real time. But as systems extend into persistent, long-running operation — managing email, executing multi-day workflows, coordinating sub-agents across organizational boundaries — three distinct failure classes emerge simultaneously: the agent acts on knowledge that has decayed or been superseded; it executes actions that were authorized for a context that no longer exists; and it pursues goals that no stakeholder can easily inspect or override. These are not implementation bugs. They are the predictable consequence of designing session-bounded systems and then running them across session boundaries.</p>
+
+    <p>The field has responded with capable partial frameworks. Memory architectures address retention and retrieval <span class="cite">[CoALA, MemGPT]</span>. Action frameworks address reasoning, tool use, and self-correction <span class="cite">[ReAct, Reflexion]</span>. Governance frameworks address oversight and interruptibility <span class="cite">[OpenAI]</span>. What the field lacks is an account of how these three domains constrain one another — and why that constraint tightens, specifically and structurally, as systems transition from session-based to long-running operation.</p>
+
+    <p>This paper makes three contributions.</p>
+
+    <p>First, it proposes <em>Agent Epistemic Integrity</em> (AEI) as a unified architectural property spanning Knowing, Doing, and Deciding, and articulates the <em>stable what / volatile how</em> principle as the design invariant that makes AEI durable: the requirement that an agent maintain coherent, correctable epistemic state across all three domains does not change as models improve, infrastructure evolves, or deployment contexts diversify. The mechanisms that satisfy it do. Systems organized around the stable what survive this volatility; systems organized around current implementation patterns require reinvention each time those patterns change.</p>
+
+    <p>Second, it identifies the <em>session-to-long-running transition</em> as the organizing diagnostic that reveals what each domain truly requires — and reconceives <em>steerability</em> not as a behavioral preference but as an architectural property: the degree to which a system's active state remains correctable by authorized parties. In the long-running regime, steerability becomes structurally unsatisfiable without an explicit representation of the agent's forward intent. Treating it as a policy concern without grounding it in architecture leaves the mechanism permanently underspecified.</p>
+
+    <p>Third, it introduces <em>prospective memory</em> as the unifying primitive — the agent's live, queryable representation of its own planned commitments — and argues that this fourth memory tier is not an optional extension but the structural connective tissue between memory architecture and steerability in the long-running setting.</p>
+  </section>
+
+  <!-- ── 2. Framework ──────────────────────────────── -->
+  <section class="paper-section" id="framework">
+    <h2 class="section-heading"><span class="section-num">2</span>The Framework: Agent Epistemic Integrity</h2>
+
+    <h3 class="subsection-heading"><span class="subsection-num">2.1</span>Definition</h3>
+
+    <p><strong>Agent Epistemic Integrity (AEI)</strong> is the property of an agentic system whereby its beliefs about world state, self-state, and its own uncertainty are coherent, accurate, and actionable — and whereby the system behaves in proportion to what it does and does not know. The final clause is not decorative. A system can maintain probabilistic beliefs and still violate epistemic integrity if it acts as though uncertainty does not exist. Conversely, a system can be highly uncertain and maintain full integrity if its actions are calibrated to that uncertainty. AEI is not a claim about omniscience; it is a claim about calibrated action under incomplete information.</p>
+
+    <div class="callout">
+      <p><strong>AEI is a system-level property, not a model-level one.</strong> It is not guaranteed by any individual component — not the retriever, not the planner, not the tool executor — and it cannot be evaluated on the basis of individual outputs. Its satisfaction depends on how the system represents epistemic state and exposes that representation for correction. No amount of fine-tuning produces AEI in a system whose architecture lacks the inspection and correction surfaces it requires.</p>
+    </div>
+
+    <h3 class="subsection-heading"><span class="subsection-num">2.2</span>Three Invariant Domains</h3>
+
+    <p>The problem space of agentic systems decomposes, at the architectural level, into three domains.</p>
+
+    <p><strong>Knowing</strong> is memory and context management — what the agent holds true about the world, itself, and its history. The problem is not storage but coherence over time: non-contradictory beliefs, recognition of supersession, and traceable provenance.</p>
+
+    <p><strong>Doing</strong> is tool and capability management — what actions the agent can take, under what conditions, and what the cumulative effect of its invocations has been. The challenge is not enumeration but runtime state: capability availability is not binary, effects are not idempotent, and degradation is frequently unannounced.</p>
+
+    <p><strong>Deciding</strong> is planning and reasoning — how the agent selects and sequences actions given its beliefs and capabilities. This spans single-step selection, plan decomposition, and the meta-level question of when to pause and solicit input.</p>
+
+    <p>These three domains are invariant in the sense that any agentic system must solve some version of each, and no solution in one substitutes for a solution in another. They correspond to the three components of a purposive system: representation, action, and deliberation.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">2.3</span>The 3×2 Grid</h3>
+
+    <p>The framework organizes these three domains against two deployment paradigms: the <strong>session-based paradigm</strong>, in which the agent operates within a bounded interaction window, and the <strong>long-running paradigm</strong>, in which the agent persists across arbitrary time horizons and may act during periods of reduced supervision. Figure 1 illustrates the six cells of the framework and the new architectural primitive each transition requires.</p>
+
+    <!-- Figure 1: AEI 3×2 Grid (parchment-themed inline SVG) -->
+    <div class="figure">
+      <svg width="100%" viewBox="0 0 680 450" role="img" xmlns="http://www.w3.org/2000/svg"
+           style="font-family:'Lora',Georgia,serif;">
+        <title>Agent Epistemic Integrity framework: 3×2 grid</title>
+        <desc>Three domains (Knowing, Doing, Deciding) against two deployment paradigms (Session-Based and Long-Running). Each domain requires a new architectural primitive in the long-running regime. Prospective memory unifies all three.</desc>
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#8b4513" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- AEI outer frame -->
+        <rect x="6" y="6" width="668" height="438" rx="16" fill="none"
+              stroke="#8b4513" stroke-width="1.2" stroke-dasharray="8 5" opacity="0.55"/>
+
+        <!-- Title -->
+        <text x="340" y="31" text-anchor="middle"
+              font-family="'Cormorant Garamond',Georgia,serif" font-size="17" font-weight="600"
+              fill="#1c1a12">Agent Epistemic Integrity</text>
+
+        <!-- Column headers -->
+        <text x="60" y="57" text-anchor="middle"
+              font-family="'Lora',Georgia,serif" font-size="13" fill="rgba(28,26,18,0.62)">Domain</text>
+
+        <!-- Session-Based box -->
+        <rect x="118" y="43" width="158" height="26" rx="6"
+              fill="#e2ddd3" stroke="rgba(28,26,18,0.30)" stroke-width="0.5"/>
+        <text x="197" y="56" dominant-baseline="central" text-anchor="middle"
+              font-family="'Cormorant Garamond',Georgia,serif" font-size="15" font-weight="600"
+              fill="#1c1a12">Session-Based</text>
+
+        <!-- Transition arrow -->
+        <line x1="279" y1="56" x2="290" y2="56"
+              stroke="#8b4513" stroke-width="1" marker-end="url(#arr)"/>
+
+        <!-- Long-Running box -->
+        <rect x="292" y="43" width="170" height="26" rx="6"
+              fill="#f0e8d8" stroke="#9a6a3a" stroke-width="0.5"/>
+        <text x="377" y="56" dominant-baseline="central" text-anchor="middle"
+              font-family="'Cormorant Garamond',Georgia,serif" font-size="15" font-weight="600"
+              fill="#1c1a12">Long-Running</text>
+
+        <text x="574" y="57" text-anchor="middle"
+              font-family="'Lora',Georgia,serif" font-size="13" fill="rgba(28,26,18,0.62)">New Primitive</text>
+
+        <!-- Header divider -->
+        <line x1="8" y1="74" x2="672" y2="74" stroke="rgba(28,26,18,0.18)" stroke-width="0.5"/>
+
+        <!-- Vertical dividers -->
+        <line x1="112" y1="42" x2="112" y2="388" stroke="rgba(28,26,18,0.18)" stroke-width="0.5"/>
+        <line x1="282" y1="74" x2="282" y2="388" stroke="rgba(28,26,18,0.18)" stroke-width="0.5"/>
+        <line x1="466" y1="42" x2="466" y2="388" stroke="rgba(28,26,18,0.18)" stroke-width="0.5"/>
+
+        <!-- ROW 1: KNOWING -->
+        <rect x="8" y="76" width="102" height="98" rx="8" fill="#d5e4f2" stroke="#3a6896" stroke-width="0.7"/>
+        <text x="59" y="125" dominant-baseline="central" text-anchor="middle"
+              font-family="'Cormorant Garamond',Georgia,serif" font-size="16" font-weight="600"
+              fill="#1c1a12">Knowing</text>
+
+        <text x="122" y="103" font-family="'Lora',Georgia,serif" font-size="13" fill="#1c1a12">Context fresh by</text>
+        <text x="122" y="120" font-family="'Lora',Georgia,serif" font-size="13" fill="#1c1a12">session boundary</text>
+        <text x="122" y="149" font-family="'Lora',Georgia,serif" font-size="12"
+              font-style="italic" fill="rgba(28,26,18,0.58)">(freshness assumed)</text>
+
+        <text x="292" y="99" font-family="'Lora',Georgia,serif" font-size="13" fill="#1c1a12">Detect staleness;</text>
+        <text x="292" y="116" font-family="'Lora',Georgia,serif" font-size="13" fill="#1c1a12">revise superseded</text>
+        <text x="292" y="133" font-family="'Lora',Georgia,serif" font-size="13" fill="#1c1a12">beliefs</text>
+
+        <rect x="476" y="103" width="183" height="38" rx="8" fill="#bcd4ee" stroke="#2a5886" stroke-width="0.7"/>
+        <text x="567" y="122" dominant-baseline="central" text-anchor="middle"
+              font-family="'Cormorant Garamond',Georgia,serif" font-size="15" font-weight="600"
+              fill="#1c1a12">Belief revision</text>
+
+        <line x1="8" y1="176" x2="672" y2="176" stroke="rgba(28,26,18,0.18)" stroke-width="0.5"/>
+
+        <!-- ROW 2: DOING -->
+        <rect x="8" y="178" width="102" height="98" rx="8" fill="#e6daf5" stroke="#683a96" stroke-width="0.7"/>
+        <text x="59" y="227" dominant-baseline="central" text-anchor="middle"
+              font-family="'Cormorant Garamond',Georgia,serif" font-size="16" font-weight="600"
+              fill="#1c1a12">Doing</text>
+
+        <text x="122" y="205" font-family="'Lora',Georgia,serif" font-size="13" fill="#1c1a12">State ephemeral;</text>
+        <text x="122" y="222" font-family="'Lora',Georgia,serif" font-size="13" fill="#1c1a12">invocations isolated</text>
+        <text x="122" y="249" font-family="'Lora',Georgia,serif" font-size="12"
+              font-style="italic" fill="rgba(28,26,18,0.58)">(idempotency assumed)</text>
+
+        <text x="292" y="201" font-family="'Lora',Georgia,serif" font-size="13" fill="#1c1a12">Track cumulative state;</text>
+        <text x="292" y="218" font-family="'Lora',Georgia,serif" font-size="13" fill="#1c1a12">reason about safe</text>
+        <text x="292" y="235" font-family="'Lora',Georgia,serif" font-size="13" fill="#1c1a12">resumption and retry</text>
+
+        <rect x="476" y="196" width="183" height="56" rx="8" fill="#d8c8f0" stroke="#582a86" stroke-width="0.7"/>
+        <text x="567" y="217" dominant-baseline="central" text-anchor="middle"
+              font-family="'Cormorant Garamond',Georgia,serif" font-size="15" font-weight="600"
+              fill="#1c1a12">Capability state</text>
+        <text x="567" y="238" dominant-baseline="central" text-anchor="middle"
+              font-family="'Cormorant Garamond',Georgia,serif" font-size="15" font-weight="600"
+              fill="#1c1a12">management</text>
+
+        <line x1="8" y1="278" x2="672" y2="278" stroke="rgba(28,26,18,0.18)" stroke-width="0.5"/>
+
+        <!-- ROW 3: DECIDING -->
+        <rect x="8" y="280" width="102" height="98" rx="8" fill="#f5e0d5" stroke="#8b4513" stroke-width="0.7"/>
+        <text x="59" y="329" dominant-baseline="central" text-anchor="middle"
+              font-family="'Cormorant Garamond',Georgia,serif" font-size="16" font-weight="600"
+              fill="#1c1a12">Deciding</text>
+
+        <text x="122" y="307" font-family="'Lora',Georgia,serif" font-size="13" fill="#1c1a12">Goal fixed for</text>
+        <text x="122" y="324" font-family="'Lora',Georgia,serif" font-size="13" fill="#1c1a12">session duration</text>
+        <text x="122" y="351" font-family="'Lora',Georgia,serif" font-size="12"
+              font-style="italic" fill="rgba(28,26,18,0.58)">(goal validity assumed)</text>
+
+        <text x="292" y="303" font-family="'Lora',Georgia,serif" font-size="13" fill="#1c1a12">Goals evolve, expire;</text>
+        <text x="292" y="320" font-family="'Lora',Georgia,serif" font-size="13" fill="#1c1a12">track validity;</text>
+        <text x="292" y="337" font-family="'Lora',Georgia,serif" font-size="13" fill="#1c1a12">surface intent drift</text>
+
+        <rect x="476" y="298" width="183" height="56" rx="8" fill="#f5d0b8" stroke="#8b4513" stroke-width="0.7"/>
+        <text x="567" y="319" dominant-baseline="central" text-anchor="middle"
+              font-family="'Cormorant Garamond',Georgia,serif" font-size="15" font-weight="600"
+              fill="#1c1a12">Goal lifecycle</text>
+        <text x="567" y="340" dominant-baseline="central" text-anchor="middle"
+              font-family="'Cormorant Garamond',Georgia,serif" font-size="15" font-weight="600"
+              fill="#1c1a12">management</text>
+
+        <!-- Prospective Memory banner -->
+        <rect x="282" y="394" width="390" height="46" rx="8"
+              fill="#f5e8d8" stroke="#8b4513" stroke-width="0.8" opacity="0.92"/>
+        <text x="477" y="412" dominant-baseline="central" text-anchor="middle"
+              font-family="'Cormorant Garamond',Georgia,serif" font-size="16" font-weight="600"
+              fill="#6b3010">Prospective memory</text>
+        <text x="477" y="430" dominant-baseline="central" text-anchor="middle"
+              font-family="'Lora',Georgia,serif" font-size="13" fill="#8b4513">the unifying primitive across all three long-running requirements</text>
+      </svg>
+      <p class="figure-caption">
+        <span class="figure-label">Figure 1.</span>
+        The AEI 3×2 grid. The session-based column reflects what current architectures implicitly assume — and the assumptions each column silently encodes are shown in italic. The long-running column is where those assumptions fail, requiring new architectural primitives. Prospective memory (§3.4) is the unifying primitive across all three right-column cells. AEI is the architectural property governing the full grid.
+      </p>
+    </div>
+
+    <h3 class="subsection-heading"><span class="subsection-num">2.4</span>Two Horizontal Constraints</h3>
+
+    <p>Two concerns cut across all six cells and represent qualitatively distinct constraints on the AEI problem.</p>
+
+    <p>The <strong>Model Layer</strong> is the source of instability that any architecture must absorb. Foundation model behavior is not static: models are updated on schedules that may not be communicated to system operators. Any system capability that depends on specific model behavior — uncertainty calibration, tool-use syntax, reasoning patterns — is subject to silent regression. AEI requires that architectures treat model-layer instability as a design invariant, not an edge case.</p>
+
+    <p>The <strong>Economics Layer</strong> is the optimization constraint that any real deployment must satisfy. Context tokens are not free. Long-horizon tasks accumulate retrieval, reranking, and state-reconstruction costs across sessions. The economics layer does not ask which design maximizes epistemic integrity in principle; it asks which design maximizes integrity subject to a cost budget. This hard constraint shapes which architectures are actually deployable.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">2.5</span>The Stable What / Volatile How Principle</h3>
+
+    <div class="callout">
+      <p>The <strong>stable what</strong> is the invariant requirement — the architectural obligation that persists regardless of implementation. For Knowing: the agent must maintain non-contradictory beliefs and detect when they have been superseded. For Doing: it must track the cumulative state of its capability invocations and reason about safe resumption. For Deciding: it must maintain an explicit history of its intent states and surface changes for human review.</p>
+      <p>The <strong>volatile how</strong> is the mechanism — the specific implementation that satisfies the requirement today. A timestamp-weighted vector store, a Bayesian revision algorithm, a TTL-based staleness flag. Each is a reasonable answer to the stable what; none is the only answer. When models are upgraded, retrieval infrastructure changes, or better algorithms emerge, the how changes. The stable what does not.</p>
+    </div>
+
+    <p>A system organized around the stable what will survive those changes with its core behavior intact. A system organized around today's specific mechanism will require partial or complete redesign each time the mechanism evolves. AEI is offered as a stable what for the agentic domain: the mechanisms that satisfy it are a research and engineering agenda; the requirement itself is fixed.</p>
+  </section>
+
+  <!-- ── 3. Transition ──────────────────────────────── -->
+  <section class="paper-section" id="transition">
+    <h2 class="section-heading"><span class="section-num">3</span>The Session-to-Long-Running Transition</h2>
+
+    <p>The session boundary is not a UX convenience. It is an architectural assumption baked into every layer of how agents are currently designed: how they retrieve context, how they invoke capabilities, and how they represent goals. Within a session, that assumption does its work silently — it absorbs complexity that would otherwise have to be handled explicitly. Remove it, and the complexity does not disappear. It surfaces, simultaneously, across all three domains of epistemic integrity.</p>
+
+    <p>A session is, in architectural terms, a freshness guarantee. When an agent begins a new session, its retrieved beliefs are implicitly current — staleness that predates the session boundary is outside the agent's concern. Its invoked tools are stateless with respect to prior runs — whatever happened before is not the agent's problem to reconcile. Its goal is stable by assumption — the user stated it moments ago, and nothing has had time to change it. The session is a coherence envelope: it bounds the space in which the agent must reason about time, consistency, and intent. Long-running operation tears that envelope away. The agent must supply its own coherence — continuously, across all three domains.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Domain</th>
+            <th>Session-Scoped</th>
+            <th>Long-Running</th>
+            <th>New Primitive Required</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="td-knowing">Knowing</td>
+            <td>Retrieve what is relevant now; freshness assumed</td>
+            <td>Detect staleness; revise superseded beliefs</td>
+            <td>Belief revision</td>
+          </tr>
+          <tr>
+            <td class="td-doing">Doing</td>
+            <td>Select and invoke the right capability; state is ephemeral</td>
+            <td>Track cumulative state; reason about safe resumption and retry</td>
+            <td>Capability state management</td>
+          </tr>
+          <tr>
+            <td class="td-deciding">Deciding</td>
+            <td>Plan the next step; goal is stable</td>
+            <td>Track goals' validity conditions over time; surface intent drift</td>
+            <td>Goal lifecycle management</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="subsection-heading"><span class="subsection-num">3.1</span>Knowing: From Retrieval to Belief Revision</h3>
+
+    <p>In a session-scoped system, the retrieval problem is a relevance problem: find the context most pertinent to the current query and surface it. Freshness is not a retrieval criterion because the session boundary enforces it structurally — nothing retrieved from a session that began moments ago can be meaningfully stale.</p>
+
+    <p>Long-running operation dissolves this guarantee. An agent running for days, weeks, or months carries beliefs about user preferences, organizational state, prior decisions, and external facts — beliefs that were accurate when formed and may not be accurate now. The agent has no external freshness signal to rely on. It must treat its own belief state as an object of ongoing epistemic management: tracking provenance, estimating decay, detecting inconsistency across newly arriving evidence, and revising beliefs when the evidence warrants.</p>
+
+    <p>This is a qualitatively different operation from retrieval. Retrieval asks which memory is most relevant. <em>Belief revision</em> asks which memories are still true — and what to do when the answer is no. Without a mechanism for belief revision, a long-running agent does not accumulate knowledge over time; it accumulates drift, surfacing outdated beliefs with the same confidence it would apply to fresh ones.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">3.2</span>Doing: From Invocation to Capability State Management</h3>
+
+    <p>The tool-use model underlying most current architectures is implicitly stateless. A capability is selected, invoked, and its result consumed within the scope of a single reasoning step. If the invocation fails, it either retries immediately or surfaces an error. There is no persistent record of partial progress, no accounting for what a prior invocation may have already accomplished, and no mechanism for reasoning about the relationship between current and prior invocations.</p>
+
+    <p>Within a session, this is largely acceptable — sessions are short, tools are fast, and failure modes are recoverable. Long-running operation changes the failure model completely. A task spanning hours or days may involve dozens of capability invocations. Partial completions are not aberrations; they are the normal operating condition. Retries do not reset cleanly — they must be aware of what has already been effected in the world. Tools that write external state — sending emails, modifying documents, updating records — are no longer idempotent in the session sense, and naive retry logic can compound errors rather than recover from them.</p>
+
+    <p>The required primitive is <em>capability state management</em>: an explicit, durable representation of what each tool invocation has accomplished, what remains, and what constraints govern resumption or retry. Without it, the long-running agent cannot distinguish between a task that has not started and one that is half complete, nor can it reason about whether a given action is safe to repeat.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">3.3</span>Deciding: From Step Planning to Goal Lifecycle Management</h3>
+
+    <p>In a session-scoped agent, the goal is a fixed point. The user stated it at the beginning of the session; it has not changed; the agent's job is to make progress toward it. Planning is a local operation — identify the next best action given the current state.</p>
+
+    <p>Long-running operation transforms the goal from a fixed point into a trajectory through time. A goal valid when issued may be partially satisfied, fully superseded, or simply expired by the time the agent acts on it. Organizational priorities shift. User circumstances change. Deadlines pass. New information renders prior goals incoherent. A long-running agent that cannot reason about the lifecycle of its own goals will faithfully execute against objectives that are no longer valid — completing tasks no one needed, optimizing for outcomes no one wants.</p>
+
+    <p><em>Goal lifecycle management</em> is the primitive that addresses this: the agent must maintain an explicit history of its intent states, track the conditions under which each goal was issued, detect when those conditions have changed, and surface that detection for human review rather than silently continuing.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">3.4</span>Prospective Memory as the Unifying Primitive</h3>
+
+    <p>All three escalations — from retrieval to belief revision, from invocation to capability state management, from step planning to goal lifecycle management — share a common structural requirement. Each requires the agent to maintain a live, queryable model of its own intended future state: what it believes it will need to know, what it expects to do, and what it is committed to accomplishing. This is the function of <em>prospective memory</em>.</p>
+
+    <p>The term draws from cognitive psychology <span class="cite">[Brandimonte]</span>, where it refers to the capacity to remember to perform an intended action at a future time or in response to a future cue. The engineering construct proposed here is related in motivation but broader in scope: a first-class, serializable, inspectable data structure that encodes not just pending actions but the validity conditions, provenance, and dependencies of the agent's forward commitments — and exposes them through a query interface to both the execution engine and the human oversight layer. The cognitive construct motivates the name; the architectural specification stands on its own terms.</p>
+
+    <div class="callout">
+      <p>Prospective memory is the natural insertion point for human steering. What a human most needs to inspect and correct is not the agent's past actions — which cannot be undone — but its forward intentions, which can. If those intentions are represented explicitly, they are queryable, auditable, and correctable before they commit. If they exist only implicitly within a chain of reasoning steps, human steering requires reconstructing the agent's intent from the outside — slow, error-prone, and architecturally fragile.</p>
+      <p><strong>Steerability is not a property of the user interface. It is a property of the memory architecture.</strong> An agent designed from the start with prospective memory as a first-class primitive is steerable by construction. An agent for which steering is added afterward is steerable only by workaround.</p>
+    </div>
+  </section>
+
+  <!-- ── 4. Prescriptions ──────────────────────────── -->
+  <section class="paper-section" id="prescriptions">
+    <h2 class="section-heading"><span class="section-num">4</span>Implications for System Design</h2>
+
+    <p>Current agentic systems are built around task completion. Their internal architecture reflects this: a planner emits steps, a tool executor runs them, and outputs accumulate until a termination condition is met. Epistemic state is implicit — carried in context, shaped by model behavior, and largely invisible to the system itself. When something goes wrong, post-hoc inspection of logs may reveal <em>what</em> happened but rarely <em>why the agent was confident enough to proceed</em>. This is not a logging gap. It is a design gap.</p>
+
+    <p>A system architected around epistemic integrity inverts the priority. Task output is still the product, but epistemic state is a first-class citizen of the runtime — tracked, surfaced, and made actionable at every layer. Three prescriptions follow, one per domain. A system that implements only a subset has not achieved epistemic integrity — it has added instrumentation.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">4.1</span>Prescription 1 (Knowing): Uncertainty as a First-Class Output</h3>
+
+    <p>Every task output should be accompanied by an <em>uncertainty audit trail</em> — a structured, machine-readable record that distinguishes three epistemic modes across the trajectory: what the agent knew with high confidence, what it inferred from incomplete context, and what it assumed without verification. This is not logging. Logs record events; the uncertainty audit trail records the agent's epistemic posture <em>at the moment of decision</em>. These are different artifacts with different consumers.</p>
+
+    <p>Each substantive action in a task — a retrieval, a synthesis step, a tool invocation, a commitment to a subgoal — should emit a tagged epistemic annotation:</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Tag</th><th>Meaning</th><th>Example annotation</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>confirmed</code></td>
+            <td>Grounded in retrieved or directly provided evidence</td>
+            <td>"Project deadline is April 30 — confirmed from calendar retrieval"</td>
+          </tr>
+          <tr>
+            <td><code>inferred</code></td>
+            <td>Derived by reasoning from confirmed facts</td>
+            <td>"Given the deadline and today's date, the task is running late"</td>
+          </tr>
+          <tr>
+            <td><code>assumed</code></td>
+            <td>Taken as true without available grounding</td>
+            <td>"Assuming vendor preferences from the prior session still apply"</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Downstream systems — human reviewers, orchestrating agents, risk management layers — can then operate on the audit trail as a first-class input: escalating on assumption density, routing high-inference steps to verification loops, or presenting the trail to the user as part of the task deliverable. In the long-running setting, where tasks span extended time horizons and may resume after model state has been reconstructed, the audit trail provides epistemic continuity that context windows alone cannot. A resuming agent that inherits an uncertainty audit trail knows not just <em>where it left off</em> but <em>how confident to be</em> about what it recorded.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">4.2</span>Prescription 2 (Doing): Capability State as a Durable Runtime Artifact</h3>
+
+    <p>Human interruption of agentic tasks is currently destructive by default. Without a well-defined insertion point, an interrupt either cancels in-flight work, corrupts task state, or is queued until the agent reaches a natural pause — at which point the moment for correction may have passed. The root cause is architectural: most systems have no explicit representation of what each tool invocation has accomplished, what remains, or what constraints govern safe resumption. Interruption has nowhere to land, and neither does a retry.</p>
+
+    <p><em>Capability state</em> — the execution record of each tool invocation — should be a durable, queryable artifact maintained by the system rather than reconstructed from logs after the fact. At minimum, this record should encode: what the invocation was asked to do, what it has completed, what remains, whether resumption is safe or requires human review, and what side effects have already been committed to external systems. A system with capability state management can distinguish a safe retry from a dangerous one; without it, the agent is guessing.</p>
+
+    <p>This closes the Doing gap with the same structural logic that the uncertainty audit trail applies to Knowing. The form differs; the principle — making implicit state explicit and inspectable — is the same.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">4.3</span>Prescription 3 (Deciding): Prospective Memory as the Steerability Surface</h3>
+
+    <p>Prospective memory — the agent's live model of its own planned commitments — provides the steerability surface that the Deciding domain requires in the long-running setting. If the agent maintains an explicit, queryable representation of what it intends to do next (and why), then a human interrupt can target that representation directly: canceling a specific intended action, modifying a goal parameter, or injecting a new constraint before execution rather than after. This is the difference between corrective steering and emergency braking.</p>
+
+    <p>Engineering this surface requires that prospective memory be a durable, inspectable artifact — not an ephemeral planning state inside a single model call. It should be serializable, versioned, and accessible to both the human interface layer and the execution engine. An agent that cannot surface its own intentions cannot be steered; it can only be stopped.</p>
+
+    <p>Existing evaluation frameworks are predominantly turn-level: they measure whether a given output was correct given the preceding input. For agentic trajectories, this is systematically misleading. A sequence of individually plausible steps can constitute a catastrophically flawed trajectory — one in which uncertainty accumulated silently, assumptions went unflagged, and goal validity was never reconfirmed despite shifting conditions. Epistemic integrity therefore requires <em>trajectory-level evaluation</em>: measuring not just whether outputs were correct, but whether the epistemic journey that produced them was sound.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">4.4</span>Cross-Cutting: Uncertainty-Gated Execution and Model Independence</h3>
+
+    <p><strong>Model independence.</strong> When the uncertainty audit trail, capability state record, and prospective memory surface are defined at the system level — not inside the model — they persist across model upgrades, swaps, and fine-tuning cycles. The stable what does not change when the model changes; only the volatile how by which epistemic state is produced changes. This is the stable-what principle made operational against the model layer.</p>
+
+    <p><strong>Uncertainty-gated execution.</strong> The audit trail provides a principled basis for compute allocation: steps where the agent has high confirmed grounding proceed with shallow deliberation; steps where assumption density is high trigger deeper reasoning or human escalation. This is not a heuristic — it is a property of the audit trail made actionable. A system with epistemic integrity is, by construction, a system that avoids wasteful deep deliberation on steps it is already equipped to take — directly addressing the economics constraint from §2.4.</p>
+  </section>
+
+  <!-- ── 5. Worked Example ─────────────────────────── -->
+  <section class="paper-section" id="example">
+    <h2 class="section-heading"><span class="section-num">5</span>Worked Example: A Multi-Week Vendor Negotiation</h2>
+
+    <p>To make the framework concrete, consider a long-running agent coordinating a vendor contract renewal over three weeks — drafting correspondence, scheduling meetings, maintaining state across conversations, and surfacing decisions for human review.</p>
+
+    <div class="example-block">
+      <span class="week-marker">Week 1</span>
+      <p>The user authorizes a goal: <em>Renew the XYZ contract by May 15; target 10% cost reduction; maintain current SLA terms.</em> The agent writes this into prospective memory as a goal object with a deadline, two explicit validity conditions (cost target, SLA), and an issuance timestamp. The uncertainty audit trail records the initial state of each condition as <code>confirmed</code>.</p>
+    </div>
+
+    <div class="example-block">
+      <span class="week-marker">Week 2</span>
+      <p>The user, in a meeting with a separate team, learns of a new internal requirement: XYZ must commit to a security certification as part of any renewal. The user updates a project document but does not explicitly re-instruct the agent.</p>
+      <p>In a session-bounded architecture, this update is invisible to the agent — it has no session in which to receive it. In a long-running architecture without AEI, the agent continues executing the original goal, oblivious to the new constraint. It surfaces a successfully negotiated renewal without the certification term. The user discovers the gap too late to renegotiate without relational cost.</p>
+      <p>With AEI, three things happen differently. <em>Belief revision</em>, triggered by the agent's next ingestion pass over the project document, detects inconsistency between the original goal's validity conditions and newly observed evidence. The <em>prospective memory</em> entry for the goal is flagged: original conditions are marked <code>potentially superseded</code>. The agent does not autonomously re-scope the goal — that is outside its authorization. Instead, it emits a steerability signal: "Original goal conditions may be superseded by new requirement in project document; confirm scope before proceeding." The <em>uncertainty audit trail</em> records the assumption the agent would otherwise have made (<code>assumed: original goal conditions unchanged</code>) as an explicit annotation, making the decision pathway legible to any reviewer.</p>
+    </div>
+
+    <div class="example-block">
+      <span class="week-marker">Week 3</span>
+      <p>An earlier tool invocation — a proposal email sent to the vendor — committed external state. The user now requests a revised proposal with updated pricing. A naive retry would issue a duplicate proposal, confusing the vendor. <em>Capability state</em>, however, records that the email was sent, with a message ID, and that any follow-up requires either a correction message or an explicit retraction. The execution path branches accordingly. The capability state record is updated to reflect the revised commitment chain.</p>
+    </div>
+
+    <p>The scenario is deliberately mundane. That is the point. AEI does not address exotic failure modes. It addresses failure modes that become systemic when session-bounded architectures meet multi-week operation, and it is in mundane workflows that the costs compound fastest and with the least visibility.</p>
+  </section>
+
+  <!-- ── 6. Open Problems ──────────────────────────── -->
+  <section class="paper-section" id="openproblems">
+    <h2 class="section-heading"><span class="section-num">6</span>Open Problems</h2>
+
+    <p>A framework that claims to unify three domains should be explicit about where its unification ends. The following open problems are not failures of the AEI framework — they are honest limits of what any architectural framework can address.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">6.1</span>Goal Specification Is Prior to AEI</h3>
+    <p>AEI assumes that goals, once issued, are in principle well-formed and interpretable. It addresses what happens when a goal becomes stale, ambiguous in retrospect, or superseded — not how well-formed goals are obtained in the first place. A system with perfect AEI can faithfully pursue a goal that was misspecified from the start. AEI improves traceable execution; it does not substitute for intentional alignment.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">6.2</span>Calibration at Scale Remains Empirically Open</h3>
+    <p>The uncertainty audit trail presupposes that agents can produce meaningful uncertainty estimates. Recent work on large language model calibration <span class="cite">[Kadavath]</span> finds that even instruction-tuned models can express high confidence in incorrect conclusions and hedge excessively on well-grounded ones. The audit trail provides the correct structural hook; it does not guarantee that what gets attached to that hook is calibrated. The framework creates the infrastructure that would make calibration improvements useful; it cannot substitute for those improvements.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">6.3</span>Multi-Agent Coordination Compounds the Problem</h3>
+    <p>AEI is developed primarily for a single agent operating with a defined set of capabilities and a coherent principal hierarchy. Real deployments increasingly involve networks of specialized agents, sub-agents spawned dynamically, and orchestrators that are themselves model-driven. In multi-agent settings, epistemic integrity is a property of a composition, and compositions can fail in ways that no individual agent's integrity guarantees prevent. An agent with a well-maintained uncertainty audit trail can still be misled by upstream agents that emit falsely confident annotations. This extension is a necessary direction for future work.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">6.4</span>The Cold Start Problem for Prospective Memory</h3>
+    <p>How does a long-running agent bootstrap a coherent prospective memory representation when first deployed, when transitioning between tasks, or when recovering from unexpected state loss? The framework identifies prospective memory as the right primitive without specifying how its contents should be initialized, validated, or recovered. That operational specification — a schema and lifecycle protocol for prospective memory objects — is a concrete engineering challenge this paper leaves open.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">6.5</span>Adversarial Inputs</h3>
+    <p>AEI's architecture makes certain attacks more legible — the audit trail and prospective memory surface provide inspection points that would not otherwise exist — but does not provide defenses. A poisoned belief can propagate through the audit trail as a <code>confirmed</code> annotation. A manipulated prospective memory entry can redirect behavior toward an attacker's goal while appearing legitimate to a human auditor <span class="cite">[Greshake]</span>. Robustness to adversarial inputs requires its own treatment and composes with, rather than being provided by, the framework.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">6.6</span>Adoption Is a Coordination Problem</h3>
+    <p>The primitives proposed here — audit trail, capability state record, prospective memory surface — are architectural, not standards. Their practical value depends on adoption across the ecosystem: tool developers who surface capability state, orchestrators that consume uncertainty annotations, evaluation platforms that operate on trajectory-level inputs. A single system that implements these primitives in isolation gains internal benefits but cannot participate in the cross-system integrity that multi-agent deployments require. The path from architectural principle to deployed standard is a coordination and incentive problem — and it is not automatically closed by the quality of the specification.</p>
+  </section>
+
+  <!-- ── 7. Related Work ───────────────────────────── -->
+  <section class="paper-section" id="related">
+    <h2 class="section-heading"><span class="section-num">7</span>Related Work and the Structural Gap</h2>
+
+    <p>The problem of maintaining coherence and correctability in agentic systems has been approached from several directions. Each captures part of the picture; none treats the joint problem.</p>
+
+    <p><strong>Memory taxonomy.</strong> CoALA <span class="cite">[CoALA]</span> adapts the cognitive science taxonomy of semantic, episodic, and procedural memory to language agents, providing widely adopted descriptive vocabulary. Three gaps are relevant here. First, the taxonomy omits prospective memory — the representation of forward-directed commitments — which this paper argues is not an optional fourth category but a structural necessity for agents operating across session boundaries. Second, CoALA is descriptive rather than prescriptive: it names categories without specifying what architectural choices follow from them. Third, it was developed for session-bounded agents and does not address what the long-running regime demands.</p>
+
+    <p><strong>Context and memory management.</strong> MemGPT <span class="cite">[MemGPT]</span> treats context window management as a virtual memory problem, with paging between bounded working memory and a larger persistent store. This is the closest existing work to the Knowing-domain requirement in the long-running regime. The gap is that MemGPT treats freshness as a retrieval problem — getting the right context into working memory at the right time — without a first-class concept of belief revision. A retrieved and acted-upon belief can go stale between retrievals; virtual memory, by itself, does not tell you which cached pages have been invalidated by the world.</p>
+
+    <p><strong>Reasoning, acting, and self-correction.</strong> ReAct <span class="cite">[ReAct]</span> and Reflexion <span class="cite">[Reflexion]</span> interleave reasoning and action, allowing agents to revise their approach based on feedback. These are genuine contributions to within-task epistemic adjustment. Their scope is the task. They do not address what happens when the task outlives the session, or when prior tasks' partial completions must be reconciled with current intent.</p>
+
+    <p><strong>Governance and steerability.</strong> The OpenAI governance practices <span class="cite">[OpenAI]</span> address interruptibility and human oversight at the policy layer. The treatment is operationally meaningful but architecturally uncommitted — it describes how humans can intervene in agent behavior without specifying how the agent should be structured to make intervention reliable. This paper argues that steerability has deep architectural dependencies on how the agent represents its forward intent, and that treating it purely as a policy concern leaves the mechanism permanently underspecified.</p>
+
+    <p><strong>Calibration.</strong> Kadavath et al. <span class="cite">[Kadavath]</span> establish that language models can estimate their own uncertainty to a useful but imperfect degree. Any framework treating uncertainty as a first-class runtime signal — as AEI does — depends on this empirical foundation and inherits its limitations. §6.2 addresses this directly.</p>
+
+    <p><strong>Concrete AI safety.</strong> Amodei et al. <span class="cite">[Amodei]</span> anticipated several failure modes — reward hacking, side effects, scalable oversight — that become acute in long-running agentic deployments. AEI is compatible with and extends that framing, specifying where in the architecture those concerns must be addressed rather than redefining them.</p>
+
+    <p><strong>The structural gap.</strong> Across these works, a common pattern: sophisticated treatments of individual components, no treatment of the joint problem. The failure modes of long-running agents arise from the coupling among belief decay, tool state opacity, and goal drift — a coupling that is not visible from any single component's vantage. The AEI framework treats that coupling as the primary object of study.</p>
+  </section>
+
+  <!-- ── 8. Conclusion ─────────────────────────────── -->
+  <section class="paper-section" id="conclusion">
+    <h2 class="section-heading"><span class="section-num">8</span>Conclusion</h2>
+
+    <p>The surgeon in the introduction fails not because she makes bad decisions but because the system she operates within has no mechanism to tell her that the ground has moved. She continues executing a plan that was sound when issued, against conditions that have since changed, with no architectural pathway for correction. This is the failure mode that Agent Epistemic Integrity is designed to prevent — not by making agents smarter, but by making their epistemic state inspectable, correctable, and structurally connected to human oversight.</p>
+
+    <p>The session-to-long-running transition is not an incremental deployment change. It is a phase change that simultaneously escalates the requirements of the three domains any agentic system must address — Knowing, Doing, and Deciding — in ways that existing frameworks address only in isolation. The consequence is a class of failure that no component-level fix resolves: agents that act on beliefs they can no longer validate, execute capabilities in states they cannot reconstruct, and pursue goals that have silently expired.</p>
+
+    <p>The AEI framework responds with a unified account. Its central claim is that the three domains are not independent problems but three faces of a single architectural invariant — the requirement that an agent's active state remain coherent, accurate, and correctable across time. The organizing insight is that prospective memory is the primitive that connects them: it enables belief revision to be goal-directed, capability state management to be obligation-aware, and human steerability to be structurally guaranteed rather than procedurally improvised.</p>
+
+    <p>Three design prescriptions follow. Uncertainty should be treated as a first-class output, emitted as a structured audit trail at every substantive decision point. Capability state should be a durable, queryable runtime artifact — not reconstructed from logs — so that resumption and retry are safe by construction. Prospective memory should be serializable and inspectable, so that steerability is guaranteed rather than improvised.</p>
+
+    <p>The framework is offered not as a complete solution but as an invariant problem statement. The stable what — maintaining coherent, correctable epistemic state across all three domains — does not change as models improve, deployment contexts diversify, or evaluation methods mature. The volatile how will evolve continuously. Systems built around the stable what will remain architecturally coherent across that volatility. Systems built around current implementation patterns will require reinvention each time those patterns change.</p>
+
+    <p>The long-running agent is not a future concern. It is a present deployment reality, and the systems running in that regime today are, in the main, session-bounded architectures operating beyond their design envelope. The surgeon analogy is not a cautionary tale about hypothetical futures — it describes a failure mode that is happening now, at scale, without the architectural vocabulary to name it clearly. This paper is an attempt to supply that vocabulary, and to make the case that building toward epistemic integrity is the most consequential architectural investment the field can make at this moment.</p>
+  </section>
+
+  <!-- ── References ─────────────────────────────────── -->
+  <section class="paper-section" id="references">
+    <h2 class="section-heading"><span class="section-num">—</span>References</h2>
+    <ul class="references-list">
+      <li>
+        <span class="ref-tag">[Amodei]</span>
+        Amodei, D., Olah, C., Steinhardt, J., Christiano, P., Schulman, J., &amp; Mané, D. (2016). Concrete Problems in AI Safety. <em>arXiv:1606.06565</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[Brandimonte]</span>
+        Brandimonte, M. A., Einstein, G. O., &amp; McDaniel, M. A. (Eds.). (1996). <em>Prospective Memory: Theory and Applications</em>. Lawrence Erlbaum Associates.
+      </li>
+      <li>
+        <span class="ref-tag">[CoALA]</span>
+        Sumers, T. R., Yao, S., Narasimhan, K., &amp; Griffiths, T. L. (2023). Cognitive Architectures for Language Agents. <em>arXiv:2309.02427</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[Greshake]</span>
+        Greshake, K., Abdelnabi, S., Mishra, S., Endres, C., Holz, T., &amp; Fritz, M. (2023). Not What You've Signed Up For: Compromising Real-World LLM-Integrated Applications with Indirect Prompt Injection. <em>arXiv:2302.12173</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[Kadavath]</span>
+        Kadavath, S., Conerly, T., Askell, A., et al. (2022). Language Models (Mostly) Know What They Don't Know. <em>arXiv:2207.05221</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[MemGPT]</span>
+        Packer, C., Wooders, S., Lin, K., Fang, V., Patil, S. G., Stoica, I., &amp; Gonzalez, J. E. (2023). MemGPT: Towards LLMs as Operating Systems. <em>arXiv:2310.08560</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[OpenAI]</span>
+        OpenAI. (2023). Practices for Governing Agentic AI Systems. <a href="https://openai.com/research/practices-for-governing-agentic-ai-systems" target="_blank">openai.com</a>.
+      </li>
+      <li>
+        <span class="ref-tag">[ReAct]</span>
+        Yao, S., Zhao, J., Yu, D., Du, N., Shafran, I., Narasimhan, K., &amp; Cao, Y. (2022). ReAct: Synergizing Reasoning and Acting in Language Models. <em>arXiv:2210.03629</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[Reflexion]</span>
+        Shinn, N., Cassano, F., Berman, E., Gopinath, A., Narasimhan, K., &amp; Yao, S. (2023). Reflexion: Language Agents with Verbal Reinforcement Learning. <em>arXiv:2303.11366</em>.
+      </li>
+    </ul>
+  </section>
+
+</div>
+
+<footer>
+  <span>© Iris Shen · <a href="/">iris-axon-lab.github.io</a></span>
+  <span class="footer-zh"><abbr title="One chosen from ten thousand — exceptionally rare">万里挑一</abbr></span>
+</footer>
+
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  // Trigger header immediately
+  const header = document.querySelector('.paper-header');
+  if (header) setTimeout(() => header.classList.add('visible'), 60);
+
+  // Fade in abstract and TOC
+  const earlySections = ['.abstract-section', '.toc'];
+  earlySections.forEach((sel, i) => {
+    const el = document.querySelector(sel);
+    if (el) setTimeout(() => el.classList.add('visible'), 180 + i * 100);
+  });
+
+  // Scroll-triggered fade for paper sections
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.04 });
+
+  document.querySelectorAll('.paper-section').forEach(el => io.observe(el));
+});
+</script>
+
+</body>
+</html>

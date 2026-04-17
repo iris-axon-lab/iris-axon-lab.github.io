@@ -1,0 +1,236 @@
+---
+layout: null
+title: "Writing"
+permalink: /posts/
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Writing — Iris Shen</title>
+<meta name="description" content="Research notes, whitepapers, and frameworks on agentic AI systems, memory architecture, and epistemic integrity.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Martian+Mono:wght@300;400&family=Lora:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:          #f5f2eb;
+  --ink:         #1c1a12;
+  --ink2:        rgba(28,26,18,0.72);
+  --ink3:        rgba(28,26,18,0.52);
+  --ink4:        rgba(28,26,18,0.22);
+  --accent:      #8b4513;
+  --accent-soft: rgba(139,69,19,0.09);
+  --rule:        rgba(28,26,18,0.12);
+  --serif:       'Cormorant Garamond', Georgia, serif;
+  --mono:        'Martian Mono', 'Courier New', monospace;
+  --body:        'Lora', Georgia, serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 18px;
+  line-height: 1.8;
+  min-height: 100vh;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.022'/%3E%3C/svg%3E");
+}
+
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 1rem 2.5rem;
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(245,242,235,0.90);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--rule);
+}
+.nav-mark {
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  font-style: normal;
+  color: var(--ink);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-mark:hover { color: var(--accent); }
+.nav-links { display: flex; gap: 2rem; }
+.nav-links a {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--ink2);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--ink); }
+.nav-links a.active { color: var(--ink); }
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 2rem 5rem;
+}
+
+.page-header {
+  padding-top: 120px;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 0;
+}
+
+.page-title {
+  font-family: var(--serif);
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 300;
+  color: var(--ink);
+  line-height: 1.1;
+  margin-bottom: 0.6rem;
+}
+
+.page-desc {
+  font-family: var(--body);
+  font-size: 1rem;
+  color: var(--ink2);
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.post-list { display: grid; gap: 0; }
+
+.post-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.3rem 1.5rem;
+  padding: 1.8rem 0;
+  border-bottom: 0.5px solid var(--rule);
+  text-decoration: none;
+  color: inherit;
+  transition: opacity 0.18s;
+  align-items: start;
+}
+.post-item:last-child { border-bottom: none; }
+.post-item:hover { opacity: 0.65; }
+
+.post-title {
+  font-family: var(--serif);
+  font-size: 1.48rem;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.25;
+  margin-bottom: 0.4rem;
+}
+
+.post-desc {
+  font-family: var(--body);
+  font-size: 0.95rem;
+  color: var(--ink2);
+  line-height: 1.65;
+  max-width: 560px;
+  font-style: italic;
+}
+
+.post-date {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  white-space: nowrap;
+  padding-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+footer {
+  margin-top: 2.6rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--ink3);
+}
+footer a { color: var(--ink3); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+
+@media (max-width: 600px) {
+  nav { padding: 0.9rem 1.2rem; }
+  .page { padding: 0 1.2rem 4rem; }
+  .page-header { padding-top: 96px; }
+  .post-item { grid-template-columns: 1fr; }
+  .post-date { padding-top: 0.5rem; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-mark" href="/">Iris Axon Lab</a>
+  <div class="nav-links">
+    <a href="/posts/" class="active">Writing</a>
+    <a href="/projects/">Projects</a>
+    <a href="/notes/">Notes</a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <div class="page-header">
+    <h1 class="page-title">Writing</h1>
+    <p class="page-desc">Research notes, whitepapers, and half-baked ideas that made it out of the notebook.</p>
+  </div>
+
+  <div class="post-list">
+
+    <a class="post-item" href="/writing/2026/04/15/agentic-epistemic-integrity-whitepaper.html">
+      <div>
+        <div class="post-title">Agent Epistemic Integrity: A Unified Framework for Knowing, Doing, and Deciding</div>
+        <div class="post-desc">Introduces AEI as a unified architectural property — the guarantee that what an agent knows, does, and decides remains coherent, correctable, and aligned with user intent across time. Proposes prospective memory as the missing primitive connecting memory architecture to steerability.</div>
+      </div>
+      <div class="post-date">Apr 2026</div>
+    </a>
+
+    <a class="post-item" href="/writing/2026/04/12/agentic-runtime-layer.html">
+      <div>
+        <div class="post-title">The Agentic Runtime Layer: A Framework for How Agents Know, Do, and Decide</div>
+        <div class="post-desc">A 6-cell framework — Knowing, Doing, and Deciding × session vs. persistent scope — mapping what current agentic systems have solved and where active research and engineering investment is deepening.</div>
+      </div>
+      <div class="post-date">Apr 2026</div>
+    </a>
+
+    <a class="post-item" href="/writing/2026/03/31/quality-architecture-skills-tools.html">
+      <div>
+        <div class="post-title">Quality Architecture for Agentic Skills and Tools</div>
+        <div class="post-desc">End-to-end quality in agentic tool use is a multiplicative function of three layers: contract quality, execution quality, and orchestration-time selection. Optimizing selection alone yields limited gains if the upstream layers remain unaddressed.</div>
+      </div>
+      <div class="post-date">Mar 2026</div>
+    </a>
+
+    <a class="post-item" href="/writing/2026/02/15/four-tier-memory-taxonomy.html">
+      <div>
+        <div class="post-title">A Four-Tier Memory Taxonomy for Enterprise Agentic Systems</div>
+        <div class="post-desc">Four memory tiers — semantic, episodic, procedural, and prospective — mapped to enterprise agentic use cases. The session boundary stress test: if commitments don't survive a session end without the user restating them, you have a prospective memory gap.</div>
+      </div>
+      <div class="post-date">Feb 2026</div>
+    </a>
+
+    <a class="post-item" href="/writing/2026/02/01/two-stage-memory-architecture.html">
+      <div>
+        <div class="post-title">Two-Stage Agentic Memory Generation Architecture</div>
+        <div class="post-desc">A two-stage pipeline for agentic memory — async generation from task traces, then inference-time selection. Addresses the open problem of sourcing memory from non-human-bot interactions where signal density is far lower than in conversation transcripts.</div>
+      </div>
+      <div class="post-date">Feb 2026</div>
+    </a>
+
+  </div>
+
+  <footer>© Iris Shen · <a href="/">iris-axon-lab.github.io</a></footer>
+
+</div>
+
+</body>
+</html>
