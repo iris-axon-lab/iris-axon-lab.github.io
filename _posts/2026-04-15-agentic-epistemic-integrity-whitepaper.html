@@ -1,3 +1,4 @@
+
 ---
 layout: null
 title: "Agent Epistemic Integrity"
@@ -11,9 +12,9 @@ description: "A unified framework for Knowing, Doing, and Deciding across the se
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agent Epistemic Integrity — Iris Shen</title>
-<meta name="description" content="A unified framework for Knowing, Doing, and Deciding across the session-to-long-running transition in agentic AI systems.">
+<meta name="description" content="A conceptual architectural framework for reasoning about the coupling among memory, capability state, and steerability across the session-to-long-running transition in agentic AI systems.">
 <meta property="og:title" content="Agent Epistemic Integrity">
-<meta property="og:description" content="A unified framework for Knowing, Doing, and Deciding across the session-to-long-running transition.">
+<meta property="og:description" content="A conceptual architectural framework for Knowing, Doing, and Deciding across the session-to-long-running transition.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Martian+Mono:wght@300;400&family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=Noto+Serif+SC:wght@300;400;500&display=swap" rel="stylesheet">
 
@@ -466,7 +467,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
   <!-- Paper header -->
   <header class="paper-header">
-    <h1 class="paper-title">Agent Epistemic Integrity: A Unified Framework for Knowing, Doing, and Deciding Across the Session-to-Long-Running Transition</h1>
+    <h1 class="paper-title">Agent Epistemic Integrity: A Framework for Knowing, Doing, and Deciding Across the Session-to-Long-Running Transition</h1>
     <div class="paper-meta">
       <span>Iris Shen</span>
       <span class="sep">·</span>
@@ -482,9 +483,9 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   <div class="abstract-section">
     <p class="abstract-label">Abstract</p>
     <div class="abstract-text">
-      <p>As agentic AI systems extend from single-session interactions into long-running, persistent operation, they accumulate failures that no existing framework adequately explains: stale context treated as current, tool invocations that outlive their authorizing intent, and decisions made without any mechanism to be corrected. Existing approaches address memory, action, and governance as separate engineering concerns, leaving the structural relationship among them invisible.</p>
-      <p>This paper introduces <em>Agent Epistemic Integrity</em> (AEI) as a unified architectural property — the guarantee that what an agent knows, does, and decides remains coherent, correctable, and aligned with user intent across time. Three contributions follow. First, AEI is defined as a <em>stable invariant</em>: the requirement to maintain coherent, correctable epistemic state across Knowing, Doing, and Deciding does not change as models improve or mechanisms evolve, even as the volatile how changes continuously. Second, the session-to-long-running transition is the diagnostic stress test that reveals this requirement: steerability, reconceived not as a behavioral preference but as an architectural property, becomes structurally unsatisfiable without explicit runtime representation of forward intent. Third, <em>prospective memory</em> — the agent's live, queryable model of its own planned commitments — is the missing primitive that connects memory architecture to steerability across that transition.</p>
-      <p>Systems that treat Knowing, Doing, and Deciding as independent engineering tracks will fail at scale in the long-running regime. Systems that design for their joint coherence will not.</p>
+      <p>As agentic systems move from single-session interactions to long-running operation, they encounter coupled failure modes that are poorly captured when memory, tool state, and steerability are treated as separate concerns. This paper introduces <em>Agent Epistemic Integrity</em> (AEI) as a conceptual architectural framework for reasoning about that coupling. AEI asks whether what an agent knows, does, and intends remains coherent, inspectable, and correctable across time.</p>
+      <p>The paper makes three claims. First, the session-to-long-running transition is the stress test that turns freshness, partial execution, and goal validity from hidden assumptions into explicit state-management problems. Second, prospective memory — a durable representation of forward commitments — provides a practical correction surface for human steering, though it is not by itself sufficient for safety or correctness. Third, long-running agents require trajectory-level evaluation rather than turn-level success alone.</p>
+      <p>The contribution here is primarily conceptual. This paper does not yet offer a complete formal state model, canonical schema, or proof system for AEI. Instead, it offers a systems framing that links persistent memory, capability state, and steerability into a single runtime integrity problem.</p>
     </div>
   </div>
 
@@ -497,8 +498,8 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
       <li><span class="toc-num">3</span><a href="#transition">Session-to-Long-Running Transition</a></li>
       <li><span class="toc-num">4</span><a href="#prescriptions">Design Prescriptions</a></li>
       <li><span class="toc-num">5</span><a href="#example">Worked Example</a></li>
-      <li><span class="toc-num">6</span><a href="#openproblems">Open Problems</a></li>
-      <li><span class="toc-num">7</span><a href="#related">Related Work</a></li>
+      <li><span class="toc-num">6</span><a href="#openproblems">Limitations and Open Problems</a></li>
+      <li><span class="toc-num">7</span><a href="#related">Related Work and Positioning</a></li>
       <li><span class="toc-num">8</span><a href="#conclusion">Conclusion</a></li>
       <li><span class="toc-num">—</span><a href="#references">References</a></li>
     </ol>
@@ -508,33 +509,33 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   <section class="paper-section" id="introduction">
     <h2 class="section-heading"><span class="section-num">1</span>Introduction</h2>
 
-    <p>Consider a surgeon who, midway through a six-hour procedure, continues executing the original plan — even after the patient's condition has materially changed, after instruments have been swapped, and after the attending anesthesiologist has issued a revised recommendation. The surgeon is not malfunctioning. She is doing exactly what she was trained to do: complete the task. The failure is architectural. The system she operates within provided no mechanism to propagate new evidence into active intent, no checkpoint that asked whether the original authorization still held, and no shared representation of what "done" was supposed to mean. The outcome is not one bad decision but a cascade of locally reasonable actions built on a foundation that had silently shifted.</p>
+    <p>Consider a long-running agent coordinating a vendor contract renewal over three weeks.</p>
 
-    <p>This is, in precise structural terms, what happens in long-running agentic AI systems today.</p>
+    <p>In week one, the agent is authorized to renew the contract by May 15 with a 10% cost-reduction target and no change to the existing SLA. In week two, another team adds a new security-certification requirement to the project documentation, but no one restates that requirement in the active chat. In week three, the agent prepares to retry an earlier proposal step without realizing that a prior email has already committed external state.</p>
 
-    <p>When an agent operates within a single session, the failure modes are contained. Context is fresh, tool calls are bounded, and the user is present to correct drift in real time. But as systems extend into persistent, long-running operation — managing email, executing multi-day workflows, coordinating sub-agents across organizational boundaries — three distinct failure classes emerge simultaneously: the agent acts on knowledge that has decayed or been superseded; it executes actions that were authorized for a context that no longer exists; and it pursues goals that no stakeholder can easily inspect or override. These are not implementation bugs. They are the predictable consequence of designing session-bounded systems and then running them across session boundaries.</p>
+    <p>Nothing in this example is exotic. The agent can retrieve relevant text, call tools correctly, and still fail in a structurally predictable way. It may act on beliefs that were once true but are no longer current. It may repeat actions without reasoning over the side effects that already occurred. It may continue pursuing a goal whose validity conditions have changed without an explicit surface for correction.</p>
 
-    <p>The field has responded with capable partial frameworks. Memory architectures address retention and retrieval <span class="cite">[CoALA, MemGPT]</span>. Action frameworks address reasoning, tool use, and self-correction <span class="cite">[ReAct, Reflexion]</span>. Governance frameworks address oversight and interruptibility <span class="cite">[OpenAI]</span>. What the field lacks is an account of how these three domains constrain one another — and why that constraint tightens, specifically and structurally, as systems transition from session-based to long-running operation.</p>
+    <p>This is the setting that motivates Agent Epistemic Integrity.</p>
 
-    <p>This paper makes three contributions.</p>
+    <p>In session-bounded systems, many of these issues are partially hidden by the session boundary itself. Context is assumed to be fresh. Tool invocations are assumed to be locally bounded. Goals are assumed to remain valid for the duration of the interaction. As systems move into long-running operation — persistent assistants, multi-day workflows, background delegation, cross-session task execution — those assumptions stop holding. The result is not simply "more memory needed." It is the emergence of a coupled systems problem spanning memory, action, and steering.</p>
 
-    <p>First, it proposes <em>Agent Epistemic Integrity</em> (AEI) as a unified architectural property spanning Knowing, Doing, and Deciding, and articulates the <em>stable what / volatile how</em> principle as the design invariant that makes AEI durable: the requirement that an agent maintain coherent, correctable epistemic state across all three domains does not change as models improve, infrastructure evolves, or deployment contexts diversify. The mechanisms that satisfy it do. Systems organized around the stable what survive this volatility; systems organized around current implementation patterns require reinvention each time those patterns change.</p>
+    <p>The field has responded with capable partial frameworks. Memory architectures address retention and retrieval <span class="cite">[CoALA, MemGPT]</span>. Action frameworks address reasoning, tool use, and self-correction <span class="cite">[ReAct, Reflexion]</span>. Governance frameworks address oversight and interruptibility <span class="cite">[OpenAI]</span>. What the field lacks is a clear account of how these three domains constrain one another — and why that constraint becomes more visible, specifically and structurally, as systems transition from session-based to long-running operation.</p>
 
-    <p>Second, it identifies the <em>session-to-long-running transition</em> as the organizing diagnostic that reveals what each domain truly requires — and reconceives <em>steerability</em> not as a behavioral preference but as an architectural property: the degree to which a system's active state remains correctable by authorized parties. In the long-running regime, steerability becomes structurally unsatisfiable without an explicit representation of the agent's forward intent. Treating it as a policy concern without grounding it in architecture leaves the mechanism permanently underspecified.</p>
-
-    <p>Third, it introduces <em>prospective memory</em> as the unifying primitive — the agent's live, queryable representation of its own planned commitments — and argues that this fourth memory tier is not an optional extension but the structural connective tissue between memory architecture and steerability in the long-running setting.</p>
+    <p>This paper argues that the right unit of analysis is not memory alone, nor planning alone, nor governance alone, but their interaction. AEI is offered as a framework for that interaction. It makes three claims. First, the session-to-long-running transition turns freshness, partial execution, and goal validity from hidden assumptions into explicit state-management problems. Second, prospective memory provides a practical correction surface for human steering across that transition. Third, long-running agents require trajectory-level evaluation rather than turn-level success alone.</p>
   </section>
 
   <!-- ── 2. Framework ──────────────────────────────── -->
   <section class="paper-section" id="framework">
     <h2 class="section-heading"><span class="section-num">2</span>The Framework: Agent Epistemic Integrity</h2>
 
-    <h3 class="subsection-heading"><span class="subsection-num">2.1</span>Definition</h3>
+    <h3 class="subsection-heading"><span class="subsection-num">2.1</span>A Conceptual Architectural Property</h3>
 
-    <p><strong>Agent Epistemic Integrity (AEI)</strong> is the property of an agentic system whereby its beliefs about world state, self-state, and its own uncertainty are coherent, accurate, and actionable — and whereby the system behaves in proportion to what it does and does not know. The final clause is not decorative. A system can maintain probabilistic beliefs and still violate epistemic integrity if it acts as though uncertainty does not exist. Conversely, a system can be highly uncertain and maintain full integrity if its actions are calibrated to that uncertainty. AEI is not a claim about omniscience; it is a claim about calibrated action under incomplete information.</p>
+    <p><strong>Agent Epistemic Integrity (AEI)</strong> is the architectural property that an agent's active state remains sufficiently coherent, inspectable, and correctable for the actions it takes over time. The phrase "active state" is doing real work here. It includes not just retrieved facts, but the system's current uncertainty annotations, its understanding of what tools have already been used and with what effects, and its representation of what it is committed to doing next. A system may produce fluent outputs while lacking AEI if it cannot expose the state that justifies those outputs to inspection and correction.</p>
+
+    <p>AEI is therefore not a claim about omniscience. It is a claim about <em>calibrated operation under incomplete information</em>. A system can be uncertain and still maintain AEI if it behaves proportionally to that uncertainty. Conversely, a system can violate AEI even when individual answers sound correct, if it acts as though stale, partial, or weakly grounded state were fully reliable.</p>
 
     <div class="callout">
-      <p><strong>AEI is a system-level property, not a model-level one.</strong> It is not guaranteed by any individual component — not the retriever, not the planner, not the tool executor — and it cannot be evaluated on the basis of individual outputs. Its satisfaction depends on how the system represents epistemic state and exposes that representation for correction. No amount of fine-tuning produces AEI in a system whose architecture lacks the inspection and correction surfaces it requires.</p>
+      <p><strong>AEI is a system-level framing, not a model-level guarantee.</strong> It is not ensured by any individual component — not the retriever, not the planner, not the tool executor — and it cannot be evaluated on the basis of individual outputs. Its value is in directing architectural attention toward how the system represents epistemic state and exposes that representation for correction. No amount of fine-tuning produces AEI in a system whose architecture lacks the inspection and correction surfaces it requires.</p>
     </div>
 
     <h3 class="subsection-heading"><span class="subsection-num">2.2</span>Three Invariant Domains</h3>
@@ -783,7 +784,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
     <div class="callout">
       <p>Prospective memory is the natural insertion point for human steering. What a human most needs to inspect and correct is not the agent's past actions — which cannot be undone — but its forward intentions, which can. If those intentions are represented explicitly, they are queryable, auditable, and correctable before they commit. If they exist only implicitly within a chain of reasoning steps, human steering requires reconstructing the agent's intent from the outside — slow, error-prone, and architecturally fragile.</p>
-      <p><strong>Steerability is not a property of the user interface. It is a property of the memory architecture.</strong> An agent designed from the start with prospective memory as a first-class primitive is steerable by construction. An agent for which steering is added afterward is steerable only by workaround.</p>
+      <p><strong>Steerability is not a property of the user interface. It is a property of the memory architecture.</strong> An agent designed from the start with prospective memory as a first-class primitive has structural support for steerability. An agent for which steering is added afterward is steerable only by workaround.</p>
     </div>
   </section>
 
@@ -793,7 +794,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
     <p>Current agentic systems are built around task completion. Their internal architecture reflects this: a planner emits steps, a tool executor runs them, and outputs accumulate until a termination condition is met. Epistemic state is implicit — carried in context, shaped by model behavior, and largely invisible to the system itself. When something goes wrong, post-hoc inspection of logs may reveal <em>what</em> happened but rarely <em>why the agent was confident enough to proceed</em>. This is not a logging gap. It is a design gap.</p>
 
-    <p>A system architected around epistemic integrity inverts the priority. Task output is still the product, but epistemic state is a first-class citizen of the runtime — tracked, surfaced, and made actionable at every layer. Three prescriptions follow, one per domain. A system that implements only a subset has not achieved epistemic integrity — it has added instrumentation.</p>
+    <p>A system architected around epistemic integrity inverts the priority. Task output is still the product, but epistemic state is a first-class citizen of the runtime — tracked, surfaced, and made actionable at every layer. Three prescriptions follow, one per domain. A system that implements only a subset has added instrumentation, not epistemic integrity.</p>
 
     <h3 class="subsection-heading"><span class="subsection-num">4.1</span>Prescription 1 (Knowing): Uncertainty as a First-Class Output</h3>
 
@@ -879,65 +880,66 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
   <!-- ── 6. Open Problems ──────────────────────────── -->
   <section class="paper-section" id="openproblems">
-    <h2 class="section-heading"><span class="section-num">6</span>Open Problems</h2>
+    <h2 class="section-heading"><span class="section-num">6</span>Limitations and Open Problems</h2>
 
-    <p>A framework that claims to unify three domains should be explicit about where its unification ends. The following open problems are not failures of the AEI framework — they are honest limits of what any architectural framework can address.</p>
+    <p>AEI is meant as a design framework, not a complete theory. Several limits should be made explicit.</p>
 
-    <h3 class="subsection-heading"><span class="subsection-num">6.1</span>Goal Specification Is Prior to AEI</h3>
-    <p>AEI assumes that goals, once issued, are in principle well-formed and interpretable. It addresses what happens when a goal becomes stale, ambiguous in retrospect, or superseded — not how well-formed goals are obtained in the first place. A system with perfect AEI can faithfully pursue a goal that was misspecified from the start. AEI improves traceable execution; it does not substitute for intentional alignment.</p>
+    <h3 class="subsection-heading"><span class="subsection-num">6.1</span>This Paper Is Not Yet a Full Formal Specification</h3>
+    <p>This draft does not provide a canonical state tuple, update algebra, or proof obligations for AEI. It offers a conceptual decomposition and a set of architectural consequences. A more formal specification — defining precise state models, transition semantics, and measurable integrity conditions — remains future work. The framework is offered as a systems framing that sharpens the design target; it does not yet deliver the formal machinery needed to verify whether a given system meets it.</p>
 
-    <h3 class="subsection-heading"><span class="subsection-num">6.2</span>Calibration at Scale Remains Empirically Open</h3>
-    <p>The uncertainty audit trail presupposes that agents can produce meaningful uncertainty estimates. Recent work on large language model calibration <span class="cite">[Kadavath]</span> finds that even instruction-tuned models can express high confidence in incorrect conclusions and hedge excessively on well-grounded ones. The audit trail provides the correct structural hook; it does not guarantee that what gets attached to that hook is calibrated. The framework creates the infrastructure that would make calibration improvements useful; it cannot substitute for those improvements.</p>
+    <h3 class="subsection-heading"><span class="subsection-num">6.2</span>Better State Surfaces Do Not Fix Goal Quality</h3>
+    <p>AEI assumes there is some meaningful goal to maintain and revise. It does not solve the problem of poorly specified or misaligned goals at issuance time. A system with perfect AEI can faithfully pursue a goal that was misspecified from the start. AEI improves traceable execution; it does not substitute for intentional alignment.</p>
 
-    <h3 class="subsection-heading"><span class="subsection-num">6.3</span>Multi-Agent Coordination Compounds the Problem</h3>
-    <p>AEI is developed primarily for a single agent operating with a defined set of capabilities and a coherent principal hierarchy. Real deployments increasingly involve networks of specialized agents, sub-agents spawned dynamically, and orchestrators that are themselves model-driven. In multi-agent settings, epistemic integrity is a property of a composition, and compositions can fail in ways that no individual agent's integrity guarantees prevent. An agent with a well-maintained uncertainty audit trail can still be misled by upstream agents that emit falsely confident annotations. This extension is a necessary direction for future work.</p>
+    <h3 class="subsection-heading"><span class="subsection-num">6.3</span>Calibration Remains Empirically Open</h3>
+    <p>The uncertainty audit trail presupposes that agents can produce meaningful uncertainty estimates. Recent work on large language model calibration <span class="cite">[Kadavath]</span> finds that even instruction-tuned models can express high confidence in incorrect conclusions and hedge excessively on well-grounded ones. An uncertainty trail is only as useful as the uncertainty estimates attached to it. AEI creates the infrastructure in which calibration matters; it does not guarantee that calibration is solved.</p>
 
-    <h3 class="subsection-heading"><span class="subsection-num">6.4</span>The Cold Start Problem for Prospective Memory</h3>
+    <h3 class="subsection-heading"><span class="subsection-num">6.4</span>Multi-Agent Composition Is Harder Than Single-Agent Integrity</h3>
+    <p>AEI is developed primarily for a single agent operating with a defined set of capabilities and a coherent principal hierarchy. Real deployments increasingly involve networks of specialized agents, sub-agents spawned dynamically, and orchestrators that are themselves model-driven. In such settings, epistemic integrity becomes a compositional property. One agent's clean state can still be polluted by another agent's stale or overconfident outputs. This extension is a necessary direction for future work.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">6.5</span>Explicit State Introduces Cost and Attack Surface</h3>
+    <p>Persisting belief state, capability state, and prospective memory adds storage, latency, synchronization, and security burdens. It also creates new objects that can be tampered with if poorly secured: a poisoned belief can propagate through the audit trail as a <code>confirmed</code> annotation, and a manipulated prospective memory entry can redirect behavior while appearing legitimate to a human auditor <span class="cite">[Greshake]</span>. Those costs and risks are real. They are part of the engineering tradeoff, not a reason to avoid making state explicit altogether.</p>
+
+    <h3 class="subsection-heading"><span class="subsection-num">6.6</span>The Cold Start Problem for Prospective Memory</h3>
     <p>How does a long-running agent bootstrap a coherent prospective memory representation when first deployed, when transitioning between tasks, or when recovering from unexpected state loss? The framework identifies prospective memory as the right primitive without specifying how its contents should be initialized, validated, or recovered. That operational specification — a schema and lifecycle protocol for prospective memory objects — is a concrete engineering challenge this paper leaves open.</p>
 
-    <h3 class="subsection-heading"><span class="subsection-num">6.5</span>Adversarial Inputs</h3>
-    <p>AEI's architecture makes certain attacks more legible — the audit trail and prospective memory surface provide inspection points that would not otherwise exist — but does not provide defenses. A poisoned belief can propagate through the audit trail as a <code>confirmed</code> annotation. A manipulated prospective memory entry can redirect behavior toward an attacker's goal while appearing legitimate to a human auditor <span class="cite">[Greshake]</span>. Robustness to adversarial inputs requires its own treatment and composes with, rather than being provided by, the framework.</p>
-
-    <h3 class="subsection-heading"><span class="subsection-num">6.6</span>Adoption Is a Coordination Problem</h3>
-    <p>The primitives proposed here — audit trail, capability state record, prospective memory surface — are architectural, not standards. Their practical value depends on adoption across the ecosystem: tool developers who surface capability state, orchestrators that consume uncertainty annotations, evaluation platforms that operate on trajectory-level inputs. A single system that implements these primitives in isolation gains internal benefits but cannot participate in the cross-system integrity that multi-agent deployments require. The path from architectural principle to deployed standard is a coordination and incentive problem — and it is not automatically closed by the quality of the specification.</p>
+    <h3 class="subsection-heading"><span class="subsection-num">6.7</span>Adoption Is a Coordination Problem</h3>
+    <p>The primitives proposed here — audit trail, capability state record, prospective memory surface — are architectural, not standards. Their practical value depends on adoption across the ecosystem: tool developers who surface capability state, orchestrators that consume uncertainty annotations, evaluation platforms that operate on trajectory-level inputs. A single system that implements these primitives in isolation gains internal benefits but cannot participate in the cross-system integrity that multi-agent deployments require. The path from architectural principle to deployed standard is a coordination and incentive problem that the quality of the specification alone does not close.</p>
   </section>
 
   <!-- ── 7. Related Work ───────────────────────────── -->
   <section class="paper-section" id="related">
-    <h2 class="section-heading"><span class="section-num">7</span>Related Work and the Structural Gap</h2>
+    <h2 class="section-heading"><span class="section-num">7</span>Related Work and Positioning</h2>
 
-    <p>The problem of maintaining coherence and correctability in agentic systems has been approached from several directions. Each captures part of the picture; none treats the joint problem.</p>
+    <p>Recent literature makes it possible to position AEI more precisely than a broad "the field lacks memory" claim would suggest.</p>
 
-    <p><strong>Memory taxonomy.</strong> CoALA <span class="cite">[CoALA]</span> adapts the cognitive science taxonomy of semantic, episodic, and procedural memory to language agents, providing widely adopted descriptive vocabulary. Three gaps are relevant here. First, the taxonomy omits prospective memory — the representation of forward-directed commitments — which this paper argues is not an optional fourth category but a structural necessity for agents operating across session boundaries. Second, CoALA is descriptive rather than prescriptive: it names categories without specifying what architectural choices follow from them. Third, it was developed for session-bounded agents and does not address what the long-running regime demands.</p>
+    <p><strong>Memory taxonomy and management.</strong> CoALA <span class="cite">[CoALA]</span> adapts the cognitive science taxonomy of semantic, episodic, and procedural memory to language agents, providing widely adopted descriptive vocabulary — but it is descriptive rather than prescriptive, and was developed for session-bounded agents without addressing what the long-running regime demands. MemGPT <span class="cite">[MemGPT]</span> treats context window management as a virtual memory problem. The gap is that virtual memory does not tell you which cached pages have been invalidated by the world — retrieved and acted-upon beliefs can go stale between retrievals.</p>
 
-    <p><strong>Context and memory management.</strong> MemGPT <span class="cite">[MemGPT]</span> treats context window management as a virtual memory problem, with paging between bounded working memory and a larger persistent store. This is the closest existing work to the Knowing-domain requirement in the long-running regime. The gap is that MemGPT treats freshness as a retrieval problem — getting the right context into working memory at the right time — without a first-class concept of belief revision. A retrieved and acted-upon belief can go stale between retrievals; virtual memory, by itself, does not tell you which cached pages have been invalidated by the world.</p>
+    <p>More recent work increasingly treats memory as persistent infrastructure. A broad survey documents a rapidly fragmenting but maturing memory landscape <span class="cite">[MemAge]</span>. Continuum Memory Architecture argues specifically against stateless RAG for long-horizon agents <span class="cite">[Continuum]</span>. Memori emphasizes structured persistent memory layers and memory formation pipelines <span class="cite">[Memori]</span>. Kumiho formalizes memory updates through belief-revision semantics, the closest existing work to the revision mechanism AEI presupposes in its Knowing domain <span class="cite">[Kumiho]</span>.</p>
 
     <p><strong>Reasoning, acting, and self-correction.</strong> ReAct <span class="cite">[ReAct]</span> and Reflexion <span class="cite">[Reflexion]</span> interleave reasoning and action, allowing agents to revise their approach based on feedback. These are genuine contributions to within-task epistemic adjustment. Their scope is the task. They do not address what happens when the task outlives the session, or when prior tasks' partial completions must be reconciled with current intent.</p>
 
-    <p><strong>Governance and steerability.</strong> The OpenAI governance practices <span class="cite">[OpenAI]</span> address interruptibility and human oversight at the policy layer. The treatment is operationally meaningful but architecturally uncommitted — it describes how humans can intervene in agent behavior without specifying how the agent should be structured to make intervention reliable. This paper argues that steerability has deep architectural dependencies on how the agent represents its forward intent, and that treating it purely as a policy concern leaves the mechanism permanently underspecified.</p>
+    <p><strong>Governance and steerability.</strong> The OpenAI governance practices <span class="cite">[OpenAI]</span> address interruptibility and human oversight at the policy layer. The treatment is operationally meaningful but architecturally uncommitted — it describes how humans can intervene without specifying how the agent should be structured to make intervention reliable. AEI argues that steerability has deep architectural dependencies on how the agent represents its forward intent.</p>
 
-    <p><strong>Calibration.</strong> Kadavath et al. <span class="cite">[Kadavath]</span> establish that language models can estimate their own uncertainty to a useful but imperfect degree. Any framework treating uncertainty as a first-class runtime signal — as AEI does — depends on this empirical foundation and inherits its limitations. §6.2 addresses this directly.</p>
+    <p><strong>Evaluation.</strong> Existing benchmarks predominantly measure turn-level correctness. A growing body of work pushes toward richer, more realistic views of agent competence. τ-bench evaluates tool-agent-user interaction in real-world domains <span class="cite">[τ-bench]</span>. When2Call examines the harder question of when agents should not call tools <span class="cite">[When2Call]</span>. MCPVerse provides an expansive benchmark for agentic tool use <span class="cite">[MCPVerse]</span>. FinTrace and ATBench both emphasize holistic trajectory-level evaluation of long-horizon tasks and safety-relevant agent behavior <span class="cite">[FinTrace, ATBench]</span>. This direction is precisely the evaluation regime that AEI requires.</p>
 
-    <p><strong>Concrete AI safety.</strong> Amodei et al. <span class="cite">[Amodei]</span> anticipated several failure modes — reward hacking, side effects, scalable oversight — that become acute in long-running agentic deployments. AEI is compatible with and extends that framing, specifying where in the architecture those concerns must be addressed rather than redefining them.</p>
+    <p><strong>Calibration.</strong> Kadavath et al. <span class="cite">[Kadavath]</span> establish that language models can estimate their own uncertainty to a useful but imperfect degree. Any framework treating uncertainty as a first-class runtime signal depends on this empirical foundation and inherits its limitations. §6.3 addresses this directly.</p>
 
-    <p><strong>The structural gap.</strong> Across these works, a common pattern: sophisticated treatments of individual components, no treatment of the joint problem. The failure modes of long-running agents arise from the coupling among belief decay, tool state opacity, and goal drift — a coupling that is not visible from any single component's vantage. The AEI framework treats that coupling as the primary object of study.</p>
+    <p><strong>Positioning.</strong> Against this background, the novelty claim of AEI should be stated narrowly. AEI is not the first account of persistent memory, not the first argument for belief revision, and not the first call for trajectory-level evaluation. Its narrower claim is that long-running agent failures are best understood as a <em>coupled runtime integrity problem</em> spanning belief maintenance, capability state, and steerability. The contribution is to treat that coupling — not any single component — as the primary object of architectural design.</p>
   </section>
 
   <!-- ── 8. Conclusion ─────────────────────────────── -->
   <section class="paper-section" id="conclusion">
     <h2 class="section-heading"><span class="section-num">8</span>Conclusion</h2>
 
-    <p>The surgeon in the introduction fails not because she makes bad decisions but because the system she operates within has no mechanism to tell her that the ground has moved. She continues executing a plan that was sound when issued, against conditions that have since changed, with no architectural pathway for correction. This is the failure mode that Agent Epistemic Integrity is designed to prevent — not by making agents smarter, but by making their epistemic state inspectable, correctable, and structurally connected to human oversight.</p>
+    <p>As agentic systems move from session-bounded interactions to persistent operation, the field needs a clearer vocabulary for what actually breaks. The central problem is not simply that long-running agents need more memory. It is that what they know, what they have already done, and what they are still trying to do must remain coherent and correctable across time.</p>
 
-    <p>The session-to-long-running transition is not an incremental deployment change. It is a phase change that simultaneously escalates the requirements of the three domains any agentic system must address — Knowing, Doing, and Deciding — in ways that existing frameworks address only in isolation. The consequence is a class of failure that no component-level fix resolves: agents that act on beliefs they can no longer validate, execute capabilities in states they cannot reconstruct, and pursue goals that have silently expired.</p>
+    <p>Agent Epistemic Integrity is offered as a framework for naming that requirement.</p>
 
-    <p>The AEI framework responds with a unified account. Its central claim is that the three domains are not independent problems but three faces of a single architectural invariant — the requirement that an agent's active state remain coherent, accurate, and correctable across time. The organizing insight is that prospective memory is the primitive that connects them: it enables belief revision to be goal-directed, capability state management to be obligation-aware, and human steerability to be structurally guaranteed rather than procedurally improvised.</p>
+    <p>The framework is intentionally stronger than a memory taxonomy and intentionally weaker than a complete formal system. Its immediate value is architectural: it highlights why stale beliefs, partial side effects, and goal drift cannot be treated as independent edge cases once agents persist across sessions. Its longer-term value, if the framing proves useful, would be to guide schemas, benchmarks, and runtime interfaces that make long-running agents easier to inspect, interrupt, and trust.</p>
 
-    <p>Three design prescriptions follow. Uncertainty should be treated as a first-class output, emitted as a structured audit trail at every substantive decision point. Capability state should be a durable, queryable runtime artifact — not reconstructed from logs — so that resumption and retry are safe by construction. Prospective memory should be serializable and inspectable, so that steerability is guaranteed rather than improvised.</p>
+    <p>The <em>stable what / volatile how</em> principle is the organizing commitment underneath the framework. The requirement to maintain coherent, correctable epistemic state across Knowing, Doing, and Deciding does not change as models improve or deployment contexts diversify. The mechanisms — retrieval strategies, uncertainty scoring, capability logs, prospective memory schemas — will keep evolving. Systems built around the stable requirement will remain architecturally coherent across that evolution. Systems built around today's implementation patterns will require reinvention each time those patterns change.</p>
 
-    <p>The framework is offered not as a complete solution but as an invariant problem statement. The stable what — maintaining coherent, correctable epistemic state across all three domains — does not change as models improve, deployment contexts diversify, or evaluation methods mature. The volatile how will evolve continuously. Systems built around the stable what will remain architecturally coherent across that volatility. Systems built around current implementation patterns will require reinvention each time those patterns change.</p>
-
-    <p>The long-running agent is not a future concern. It is a present deployment reality, and the systems running in that regime today are, in the main, session-bounded architectures operating beyond their design envelope. The surgeon analogy is not a cautionary tale about hypothetical futures — it describes a failure mode that is happening now, at scale, without the architectural vocabulary to name it clearly. This paper is an attempt to supply that vocabulary, and to make the case that building toward epistemic integrity is the most consequential architectural investment the field can make at this moment.</p>
+    <p>The long-running agent is not a future concern. It is a present deployment reality, and the systems running in that regime today are, in the main, session-bounded architectures operating beyond their design envelope. The failure modes this paper describes — stale beliefs acted upon as current, side effects not tracked, goals pursued without surfaces for correction — are happening now, without the architectural vocabulary to name them clearly. This paper is an attempt to supply that vocabulary.</p>
   </section>
 
   <!-- ── References ─────────────────────────────────── -->
@@ -949,12 +951,24 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
         Amodei, D., Olah, C., Steinhardt, J., Christiano, P., Schulman, J., &amp; Mané, D. (2016). Concrete Problems in AI Safety. <em>arXiv:1606.06565</em>.
       </li>
       <li>
+        <span class="ref-tag">[ATBench]</span>
+        Li, Y., Luo, H., Xie, Y., Fu, Y., Yang, Z., Shao, S., Ren, Q., Qu, W., Fu, Y., Yang, Y., Shao, J., Hu, X., &amp; Liu, D. (2026). ATBench: A Diverse and Realistic Agent Trajectory Benchmark for Safety Evaluation and Diagnosis. <em>arXiv:2604.02022</em>.
+      </li>
+      <li>
         <span class="ref-tag">[Brandimonte]</span>
         Brandimonte, M. A., Einstein, G. O., &amp; McDaniel, M. A. (Eds.). (1996). <em>Prospective Memory: Theory and Applications</em>. Lawrence Erlbaum Associates.
       </li>
       <li>
         <span class="ref-tag">[CoALA]</span>
         Sumers, T. R., Yao, S., Narasimhan, K., &amp; Griffiths, T. L. (2023). Cognitive Architectures for Language Agents. <em>arXiv:2309.02427</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[Continuum]</span>
+        Logan, J. (2026). Continuum Memory Architectures for Long-Horizon LLM Agents. <em>arXiv:2601.09913</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[FinTrace]</span>
+        Cao, Y., Li, H., Liu, W., Cao, W., Xu, A., Qian, L., Peng, X., Tang, M., Yao, Z., Huang, J., Subbalakshmi, K. P., Zhu, Z., Suchow, J. W., &amp; Yu, Y. (2026). FinTrace: Holistic Trajectory-Level Evaluation of LLM Tool Calling for Long-Horizon Financial Tasks. <em>arXiv:2604.10015</em>.
       </li>
       <li>
         <span class="ref-tag">[Greshake]</span>
@@ -965,8 +979,24 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
         Kadavath, S., Conerly, T., Askell, A., et al. (2022). Language Models (Mostly) Know What They Don't Know. <em>arXiv:2207.05221</em>.
       </li>
       <li>
+        <span class="ref-tag">[Kumiho]</span>
+        Park, Y. B. (2026). Graph-Native Cognitive Memory for AI Agents: Formal Belief Revision Semantics for Versioned Memory Architectures. <em>arXiv:2603.17244</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[MCPVerse]</span>
+        Lei, F., Yang, Y., Sun, W., &amp; Lin, D. (2025). MCPVerse: An Expansive, Real-World Benchmark for Agentic Tool Use. <em>arXiv:2508.16260</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[MemAge]</span>
+        Hu, Y., Liu, S., Yue, Y., Zhang, G., Liu, B., Zhu, F., Lin, J., Guo, H., Dou, S., Xi, Z., et al. (2025). Memory in the Age of AI Agents. <em>arXiv:2512.13564</em>.
+      </li>
+      <li>
         <span class="ref-tag">[MemGPT]</span>
         Packer, C., Wooders, S., Lin, K., Fang, V., Patil, S. G., Stoica, I., &amp; Gonzalez, J. E. (2023). MemGPT: Towards LLMs as Operating Systems. <em>arXiv:2310.08560</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[Memori]</span>
+        Borro, L. C., Macarini, L. A. B., Tindall, G., Montero, M., &amp; Struck, A. B. (2026). Memori: A Persistent Memory Layer for Efficient, Context-Aware LLM Agents. <em>arXiv:2603.19935</em>.
       </li>
       <li>
         <span class="ref-tag">[OpenAI]</span>
@@ -979,6 +1009,14 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
       <li>
         <span class="ref-tag">[Reflexion]</span>
         Shinn, N., Cassano, F., Berman, E., Gopinath, A., Narasimhan, K., &amp; Yao, S. (2023). Reflexion: Language Agents with Verbal Reinforcement Learning. <em>arXiv:2303.11366</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[τ-bench]</span>
+        Yao, S., Shinn, N., Razavi, P., &amp; Narasimhan, K. (2024). τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains. <em>arXiv:2406.12045</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[When2Call]</span>
+        Ross, H., Mahabaleshwarkar, A. S., &amp; Suhara, Y. (2025). When2Call: When (not) to Call Tools. <em>arXiv:2504.18851</em>.
       </li>
     </ul>
   </section>
