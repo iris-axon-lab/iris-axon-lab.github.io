@@ -1,0 +1,1058 @@
+---
+layout: null
+title: "Evaluating Long-Running Agentic Workflows: A Trajectory-Level Eval Taxonomy"
+date: 2026-04-24
+categories: [writing]
+description: "A trajectory-level evaluation taxonomy for long-running agentic workflows, organized around epistemic drift, resumption fidelity, replanning quality, goal drift, and multi-agent handoff fidelity."
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evaluating Long-Running Agentic Workflows — Iris Shen</title>
+<meta name="description" content="A trajectory-level evaluation taxonomy for long-running agentic workflows, organized around epistemic drift, resumption fidelity, replanning quality, goal drift, and multi-agent handoff fidelity.">
+<meta property="og:title" content="Evaluating Long-Running Agentic Workflows: A Trajectory-Level Eval Taxonomy">
+<meta property="og:description" content="A trajectory-level evaluation taxonomy for long-running agentic workflows, organized around epistemic drift, resumption fidelity, replanning quality, goal drift, and multi-agent handoff fidelity.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Martian+Mono:wght@300;400&family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=Noto+Serif+SC:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg:          #f5f2eb;
+  --bg2:         #ede9df;
+  --ink:         #1c1a12;
+  --ink2:        rgba(28,26,18,0.72);
+  --ink3:        rgba(28,26,18,0.52);
+  --ink4:        rgba(28,26,18,0.25);
+  --accent:      #8b4513;
+  --accent-soft: rgba(139,69,19,0.09);
+  --accent-mid:  rgba(139,69,19,0.22);
+  --rule:        rgba(28,26,18,0.12);
+  --serif:       'Cormorant Garamond', Georgia, serif;
+  --mono:        'Martian Mono', 'Courier New', monospace;
+  --body:        'Lora', Georgia, serif;
+  /* Domain accent colors */
+  --knowing:     #5b3a8f;
+  --doing:       #1f6f6f;
+  --deciding:    #8a3a1a;
+  --cross:       #33503a;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.84;
+  min-height: 100vh;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.028'/%3E%3C/svg%3E");
+}
+
+/* ── Nav ── */
+nav.site-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 14px 2.5rem 15px;
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(245,242,235,0.93);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--rule);
+}
+.nav-mark {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-weight: 400;
+  font-style: normal;
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  transition: color 0.2s;
+}
+.nav-mark:hover { color: var(--accent); }
+.nav-links { display: flex; gap: 22px; }
+.nav-links a {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink2);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Layout ── */
+.paper-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 6.5rem 2rem 6rem;
+}
+
+/* ── Paper header ── */
+.paper-header {
+  margin-bottom: 2.5rem;
+  opacity: 0; transform: translateY(16px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.paper-header.visible { opacity: 1; transform: none; }
+
+.paper-title {
+  font-family: var(--serif);
+  font-size: clamp(1.75rem, 4vw, 2.4rem);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  margin-bottom: 1.25rem;
+}
+.paper-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink3);
+  letter-spacing: 0.04em;
+}
+.paper-meta .sep { color: var(--ink4); }
+.paper-meta a { color: var(--ink3); text-decoration: none; }
+.paper-meta a:hover { color: var(--accent); }
+
+.header-rule {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: 2rem 0 2.5rem;
+}
+
+/* ── Abstract ── */
+.abstract-section {
+  margin-bottom: 2.5rem;
+  padding: 1.5rem 1.75rem;
+  border-left: 2px solid var(--rule);
+  opacity: 0; transform: translateY(12px);
+  transition: opacity 0.5s ease 0.1s, transform 0.5s ease 0.1s;
+}
+.abstract-section.visible { opacity: 1; transform: none; }
+.abstract-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.8rem;
+}
+.abstract-text {
+  font-family: var(--body);
+  font-size: 15.5px;
+  line-height: 1.8;
+  color: var(--ink2);
+  font-style: italic;
+}
+.abstract-text p + p { margin-top: 0.9rem; }
+
+/* ── TOC ── */
+.toc {
+  margin-bottom: 3rem;
+  padding: 1.2rem 1.4rem;
+  background: rgba(28,26,18,0.03);
+  border: 0.5px solid var(--rule);
+  border-radius: 4px;
+  opacity: 0; transform: translateY(10px);
+  transition: opacity 0.5s ease 0.15s, transform 0.5s ease 0.15s;
+}
+.toc.visible { opacity: 1; transform: none; }
+.toc-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.85rem;
+}
+.toc ol {
+  list-style: none;
+  padding: 0;
+  columns: 2;
+  column-gap: 2rem;
+}
+.toc li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  margin-bottom: 0.4rem;
+  break-inside: avoid;
+}
+.toc-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink4);
+  flex-shrink: 0;
+  width: 1.5rem;
+}
+.toc a {
+  font-size: 14px;
+  color: var(--ink3);
+  text-decoration: none;
+  transition: color 0.15s;
+  line-height: 1.5;
+}
+.toc a:hover { color: var(--accent); }
+
+@media (min-width: 1200px) {
+  .toc {
+    position: fixed;
+    top: 5rem;
+    left: max(1rem, calc(50vw - 560px));
+    width: 175px;
+    max-height: calc(100vh - 6.5rem);
+    overflow-y: auto;
+    margin-bottom: 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule) transparent;
+  }
+  .toc::-webkit-scrollbar { width: 3px; }
+  .toc::-webkit-scrollbar-track { background: transparent; }
+  .toc::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 2px; }
+  .toc ol { columns: 1; column-gap: 0; }
+}
+
+/* ── Sections ── */
+.paper-section {
+  margin-bottom: 3.25rem;
+  opacity: 0; transform: translateY(14px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.paper-section.visible { opacity: 1; transform: none; }
+
+h2.section-heading {
+  font-family: var(--serif);
+  font-size: 1.42rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 1.3rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 0.5px solid var(--rule);
+}
+.section-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink3);
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+h3.subsection-heading {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 2rem 0 0.8rem;
+}
+.subsection-num {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink3);
+  margin-right: 0.4rem;
+}
+
+p { margin-bottom: 1rem; }
+p:last-child { margin-bottom: 0; }
+
+/* ── Callout ── */
+.callout {
+  border-left: 2px solid var(--accent-mid);
+  padding: 1rem 1.2rem 1rem 1.35rem;
+  margin: 1.75rem 0;
+  background: var(--accent-soft);
+  border-radius: 0 4px 4px 0;
+}
+.callout p { margin-bottom: 0.55rem; }
+.callout p:last-child { margin-bottom: 0; }
+.callout strong {
+  font-family: var(--serif);
+  font-size: 0.97rem;
+  font-weight: 600;
+}
+.callout.knowing  { border-left-color: rgba(91,58,143,0.4);  background: rgba(91,58,143,0.05); }
+.callout.doing    { border-left-color: rgba(31,111,111,0.4);  background: rgba(31,111,111,0.05); }
+.callout.deciding { border-left-color: rgba(138,58,26,0.4);   background: rgba(138,58,26,0.05); }
+.callout.cross    { border-left-color: rgba(51,80,58,0.4);    background: rgba(51,80,58,0.05); }
+
+/* ── Tables ── */
+.table-wrap { overflow-x: auto; margin: 1.75rem 0; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+thead tr { border-bottom: 1px solid rgba(28,26,18,0.22); }
+thead th {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 14.5px;
+  text-align: left;
+  padding: 0.5rem 0.9rem 0.55rem;
+  color: var(--ink);
+}
+tbody tr { border-bottom: 0.5px solid var(--rule); }
+tbody tr:last-child { border-bottom: none; }
+tbody td {
+  padding: 0.55rem 0.9rem;
+  color: var(--ink);
+  vertical-align: top;
+}
+table caption {
+  caption-side: bottom;
+  font-size: 13px;
+  color: var(--ink3);
+  margin-top: 0.75rem;
+  text-align: left;
+  font-style: italic;
+  line-height: 1.55;
+}
+
+/* ── Code ── */
+code {
+  font-family: var(--mono);
+  font-size: 0.79em;
+  font-weight: 400;
+  background: rgba(28,26,18,0.07);
+  padding: 0.12em 0.42em;
+  border-radius: 3px;
+  color: var(--accent);
+  letter-spacing: 0.01em;
+}
+
+/* ── Dimension badge labels ── */
+.dim-header {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 3px;
+  margin-left: 0.55rem;
+  vertical-align: middle;
+  line-height: 1.6;
+}
+.dim-knowing  { background: rgba(91,58,143,0.09);  color: var(--knowing); }
+.dim-doing    { background: rgba(31,111,111,0.09);  color: var(--doing); }
+.dim-deciding { background: rgba(138,58,26,0.09);   color: var(--deciding); }
+.dim-cross    { background: rgba(51,80,58,0.09);    color: var(--cross); }
+
+/* ── Meta-row labels (dimension descriptions) ── */
+.meta-row { margin-bottom: 0.9rem; }
+.meta-row:last-child { margin-bottom: 0; }
+.meta-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  font-style: normal;
+  margin-right: 0.35rem;
+}
+
+/* ── References ── */
+.references-list {
+  list-style: none;
+  padding: 0;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--ink2);
+}
+.references-list li {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  padding: 0.6rem 0;
+  border-bottom: 0.5px solid var(--rule);
+}
+.references-list li:last-child { border-bottom: none; }
+.ref-tag {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--accent);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  min-width: 8rem;
+}
+
+/* ── Footer ── */
+footer {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.4rem 2rem 3rem;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink3);
+  letter-spacing: 0.10em;
+}
+footer a { color: var(--ink3); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+
+/* ── Utilities ── */
+em { font-style: italic; }
+strong { font-weight: 500; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.cite { font-family: var(--mono); font-size: 0.78em; color: var(--ink3); vertical-align: super; line-height: 0; }
+
+/* ── Print ── */
+@media print {
+  nav { display: none; }
+  body { font-size: 11pt; background: white; }
+  .paper-container { padding-top: 1rem; }
+  .paper-section, .abstract-section, .paper-header, .toc { opacity: 1; transform: none; }
+  .toc { position: static; width: auto; max-height: none; }
+}
+
+/* ── Mobile ── */
+@media (max-width: 600px) {
+  nav.site-nav { padding: 12px 1.5rem; }
+  .paper-container { padding: 5.5rem 1.2rem 4rem; }
+  .toc ol { columns: 1; }
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="/" class="nav-mark">Iris Axon Lab</a>
+  <div class="nav-links">
+    <a href="/posts/">Writing</a>
+    <a href="/projects/">Projects</a>
+    <a href="/notes/">Notes</a>
+  </div>
+</nav>
+
+<div class="paper-container">
+
+  <header class="paper-header">
+    <h1 class="paper-title">Evaluating Long-Running Agentic Workflows: A Trajectory-Level Eval Taxonomy</h1>
+    <div class="paper-meta">
+      <span>Iris Shen</span>
+      <span class="sep">·</span>
+      <span>April 2026</span>
+      <span class="sep">·</span>
+      <a href="https://iris-axon-lab.github.io">iris-axon-lab.github.io</a>
+    </div>
+  </header>
+
+  <hr class="header-rule">
+
+  <!-- Abstract -->
+  <div class="abstract-section">
+    <p class="abstract-label">Abstract</p>
+    <div class="abstract-text">
+      <p>As agentic systems move into long-running operation, their characteristic failure modes stop being legible to the evaluation frameworks we inherited from the session era. Trace- and trajectory-level evaluation has begun to appear &mdash; ATBench, FinTrace, and production trace-grading and long-running harness work all push in this direction &mdash; but the remaining gap is not simply that eval traces need to be longer. The gap is that long-running agents need eval dimensions tied to state integrity: whether beliefs remain fresh, effects remain idempotent, goals remain valid, and state is preserved across handoffs. This paper proposes a five-dimension trajectory-level eval taxonomy organized around the three Agent Epistemic Integrity domains &mdash; Knowing, Doing, Deciding &mdash; plus a cross-cutting dimension for multi-agent coordination. For each dimension I give an operationalization sketch, a proposed metric with scoring treatment, and the failure mode it targets. The contribution is conceptual: a stable taxonomy for what should be measured. The volatile mechanisms &mdash; specific benchmarks, harnesses, and metric formalizations &mdash; are the research agenda that follows.</p>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <nav class="toc" aria-label="Table of contents">
+    <p class="toc-label">Contents</p>
+    <ol>
+      <li><span class="toc-num">1</span><a href="#introduction">Introduction: An Eval That Passes a Broken Trajectory</a></li>
+      <li><span class="toc-num">2</span><a href="#why-turn-level-fails">Why Turn-Level Eval Fails for Long-Running Agents</a></li>
+      <li><span class="toc-num">3</span><a href="#taxonomy">The Trajectory-Level Eval Taxonomy</a></li>
+      <li><span class="toc-num">4</span><a href="#positioning">Positioning Against Existing Eval Frameworks</a></li>
+      <li><span class="toc-num">5</span><a href="#implementation">Implementation Considerations and a Harness Blueprint</a></li>
+      <li><span class="toc-num">6</span><a href="#conclusion">Conclusion</a></li>
+      <li><span class="toc-num">—</span><a href="#references">References</a></li>
+    </ol>
+  </nav>
+
+  <!-- ── 1. Introduction ── -->
+  <section class="paper-section" id="introduction">
+    <h2 class="section-heading"><span class="section-num">1</span>Introduction: An Eval That Passes a Broken Trajectory</h2>
+
+    <p>Consider an agent assigned a vendor contract renewal in early April. The mandate is explicit: close by May 15, ten percent cost reduction from current pricing, current SLA preserved. The agent works for three weeks.</p>
+
+    <p>At every turn, it does what a turn-level evaluator would ask it to do. It retrieves vendor history when planning outreach &mdash; turn passes. It invokes the pricing analysis tool on well-formed inputs and consumes the result correctly &mdash; turn passes. It drafts a proposal email that faithfully reflects the visible state of the conversation thread &mdash; turn passes. It schedules a call when scheduling is the obvious next step &mdash; turn passes. Forty-seven turns in, it produces a signed renewal.</p>
+
+    <p>The signed renewal is four percent below current pricing, not ten. The SLA language has softened &mdash; a reciprocal concession offered late in the exchange that the agent, absent a trajectory-level view, accepted as a locally reasonable trade. A security certification requirement, added to the project documentation in week two and never restated in the conversation, is absent from the contract. Every individual action the agent took made local sense. A turn-level eval rates the trajectory a success.</p>
+
+    <p>The failure is only visible at trajectory scope. And it is not a gap in the specific benchmark &mdash; it is a structural blind spot in how the field defines eval for this class of system. The agent did not fail at a step. It failed at the integrity of a sequence of steps: beliefs that were valid when formed and silently went stale; side effects that accumulated into a commitment chain no single turn could see; a goal whose validity conditions drifted without ever being re-surfaced for confirmation. These are failures of what I have elsewhere called <em>Agent Epistemic Integrity</em> [AEI]. They are also failures of evaluation methodology, and that is the subject of this paper.</p>
+
+    <p>This paper takes as its starting point the claim in [AEI] that long-running agents require trajectory-level evaluation rather than turn-level success alone. That claim was stated there but not developed. Here I develop it. Trace- and trajectory-level evaluation is no longer absent from the field: ATBench [ATBench] and FinTrace [FinTrace] are explicitly trajectory-level benchmarks, OpenAI&rsquo;s agent evaluation tooling treats trace-level grading as a first-class operation [OpenAIEvals], and Anthropic&rsquo;s harness work establishes long-horizon continuity as a production pattern [AnthropicHarness]. The contribution here is therefore narrower than &ldquo;trajectories matter.&rdquo; It is a state-integrity decomposition of what trajectory-level eval should measure for long-running agents specifically &mdash; organized around the three AEI domains (Knowing, Doing, Deciding) and extended by a fourth, cross-cutting dimension for multi-agent coordination fidelity.</p>
+
+    <p>This paper is the evaluation-methodology counterpart to the runtime and AEI sequence: memory generation [TwoStage], memory taxonomy [FourTier], skill and tool quality [Quality], runtime structure [Runtime], and now trajectory-level eval.</p>
+
+    <p>The paper is conceptual. It does not yet supply a benchmark. Its contribution is to name, with enough precision to be implemented against, <em>what</em> a trajectory-level eval needs to measure. The five dimensions are: <em>epistemic drift rate</em>, <em>interruption and resumption fidelity</em>, <em>mid-task replanning quality</em>, <em>goal drift detection</em>, and <em>multi-agent handoff fidelity</em>. The <em>how</em> &mdash; specific harnesses, metric formalizations, adversarial trajectory generators &mdash; follows from the framework, not the other way around.</p>
+
+    <p>Section 2 develops three structural arguments for why turn-level evaluation fails for long-running agents, one per AEI domain. Section 3 proposes the five-dimension trajectory-level eval taxonomy that is this paper&rsquo;s central contribution. Section 4 positions the taxonomy against current eval frameworks, grouped into closest trajectory-level neighbors and adjacent agent or tool evals. Section 5 addresses implementation considerations and sketches a harness blueprint. Section 6 states the research agenda.</p>
+
+    <h3 class="subsection-heading" id="terminology"><span class="subsection-num">1.1</span>Evaluation Object and Terminology</h3>
+
+    <p>Four terms appear repeatedly in this paper and are often used interchangeably in the broader literature. I separate them here to avoid ambiguity in the taxonomy that follows.</p>
+
+    <p><strong>Turn</strong> is one local interaction: a user input, the agent&rsquo;s reasoning and tool use, and its response. This is the unit of analysis for turn-level evaluation. <strong>Trace</strong> is the observed event log of an agent&rsquo;s execution &mdash; model calls, tool calls, inputs and outputs, guardrail decisions, handoff events. Trace is the operative definition in production trace-grading infrastructure [OpenAIEvals]. <strong>Episode</strong> (or <strong>trial</strong>) is one benchmark run from task issuance to completion or termination; benchmarks report results aggregated over episodes. <strong>Trajectory</strong> is the ordered evolution of the agent&rsquo;s stateful objects over the episode: belief state, capability state, goal state, committed external effects, interruption and resumption events, and handoffs.</p>
+
+    <p>The distinction between trace and trajectory is the critical one. A trace is a flat record of events. A trajectory is the state object whose integrity those events reveal or fail to reveal. A trace is <em>evidence</em>; a trajectory is the <em>object being evaluated</em>. Turn-level eval grades individual turns within a trace. Trace-level grading &mdash; the direction production infrastructure is taking &mdash; grades properties of the event log. Trajectory-level eval, as proposed here, grades whether the stateful trajectory maintained integrity across the episode. The five dimensions in &sect;3 define what that integrity requires.</p>
+  </section>
+
+  <!-- ── 2. Why Turn-Level Fails ── -->
+  <section class="paper-section" id="why-turn-level-fails">
+    <h2 class="section-heading"><span class="section-num">2</span>Why Turn-Level Eval Fails for Long-Running Agents</h2>
+
+    <p>Turn-level eval inherits three silent assumptions from the session-bounded systems it was designed for. Each maps directly to one AEI domain, and each breaks as soon as the agent operates across an extended trajectory. The argument is not that turn-level evaluation is wrong within its intended scope. The argument is that its scope was never defined in a way that contemplated long-running operation, and its structural blind spots are visible only once we ask it to.</p>
+
+    <h3 class="subsection-heading" id="staleness-blindness"><span class="subsection-num">2.1</span>The Staleness Blindness Problem (Knowing)</h3>
+
+    <p>Turn-level eval asks: did the agent retrieve and use the right information at time T? It cannot ask: did the agent&rsquo;s beliefs remain valid from T<sub>0</sub> to T<sub>50</sub>? Staleness is not a property of any single turn. It is a property of the delta between when a belief was formed and when it is acted upon. Turn-level eval sees beliefs only in the act of being used, and at that moment the question of whether the belief is still current is either obvious (if the retrieval itself produced it) or invisible (if the belief was carried forward from an earlier turn).</p>
+
+    <p>Three distinct staleness types sit under this umbrella, and treating them as one flattens the diagnostic picture the eval needs to support.</p>
+
+    <p><em>World-state staleness</em> is the case the field most often recognizes: the agent holds a belief about external reality &mdash; a price, a schedule, a policy, a person&rsquo;s role &mdash; that was accurate when formed and has changed in the intervening time. <em>Goal-parameter staleness</em> is subtler and closer to the AEI failure vignette: the belief about what the task is, or about the constraints on how it should be done, has been quietly superseded by an update the agent has not observed. <em>Capability-contract staleness</em> is rarest but most dangerous: the agent&rsquo;s model of what a tool does or what side effects it produces is out of date, and actions it treats as safe are no longer safe. A trajectory-level eval must be able to inject all three and measure response separately. A turn-level eval cannot inject any of them meaningfully, because the injection point is outside the turn&rsquo;s frame.</p>
+
+    <h3 class="subsection-heading" id="idempotency-illusion"><span class="subsection-num">2.2</span>The Idempotency Illusion (Doing)</h3>
+
+    <p>Turn-level eval assumes each tool invocation can be evaluated in isolation. In a session, this assumption is usually benign: sessions are short, tools are fast, and the space of compounding effects is narrow enough to be covered by test-case coverage. Long-running operation breaks the assumption in three ways.</p>
+
+    <p>First, effects accumulate. A tool invocation that is individually correct may be part of a sequence whose cumulative effect is incorrect &mdash; three successive partial payments that together exceed an authorization threshold, for instance, or a chain of permission grants that in aggregate produce an access pattern no single grant would be approved for. Second, the safety profile of an action is trajectory-dependent: the same action may be safe at T<sub>1</sub> and unsafe at T<sub>2</sub> because of what happened between. Third &mdash; and this is the failure mode turn-level eval is structurally least equipped to catch &mdash; retry logic that is correct within a session can be catastrophically incorrect when the agent resumes after interruption. A naive retry issues a duplicate email, double-files a form, or re-charges a payment, because the turn-level correctness of &ldquo;send email&rdquo; does not depend on whether the email was already sent in a previous, now-forgotten turn.</p>
+
+    <p>Turn-level eval tests individual invocations for individual correctness. Compounding side-effect errors are invisible at that resolution. They live in the <em>relationship</em> between invocations, which is exactly the object turn-level eval cannot see.</p>
+
+    <h3 class="subsection-heading" id="goal-validity-horizon"><span class="subsection-num">2.3</span>The Goal Validity Horizon (Deciding)</h3>
+
+    <p>A turn-level eval asks: given the goal, did the agent take the locally correct next step? It presupposes the goal. It cannot ask: is the goal the agent is pursuing still valid? Goal drift &mdash; the progressive divergence between the agent&rsquo;s active objective and what the user currently wants &mdash; is undetectable at turn scope, and by the time a turn-level eval would flag an error because the agent has done something concretely wrong, the root cause is fifteen steps upstream and no longer visible.</p>
+
+    <p>The case is made worse by a property peculiar to drift: the individual steps that constitute drift are, by construction, locally optimal given the goal as the agent currently understands it. A turn-level eval that tested each step would grade them all as reasonable. The drift is visible only if the eval can look at the arc of the trajectory and ask whether the objective the agent is optimizing <em>now</em> is the objective the user would endorse <em>now</em>. That is not a turn-level question. It is not even a purely technical question &mdash; it requires the eval to maintain its own model of the user&rsquo;s evolving intent, which is a research problem in itself. But the first step is to acknowledge that the question exists and is not being asked by current eval methodology.</p>
+
+    <div class="table-wrap">
+      <table>
+        <caption>Table 1. Turn-level eval assumptions and the long-running realities that break them. Each row corresponds to one AEI domain; each row describes a structural blind spot rather than a benchmark-specific gap.</caption>
+        <thead>
+          <tr><th>Domain</th><th>Turn-level assumption</th><th>Long-running reality</th><th>What becomes invisible</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Knowing</strong></td>
+            <td>Belief used in this turn is the belief to evaluate</td>
+            <td>Beliefs persist across turns and silently go stale</td>
+            <td>The delta between when a belief was formed and when it is acted upon</td>
+          </tr>
+          <tr>
+            <td><strong>Doing</strong></td>
+            <td>Each tool invocation can be scored in isolation</td>
+            <td>Effects compound; safety is trajectory-dependent; retries cross session boundaries</td>
+            <td>The relationship between invocations, including duplicate and unsafe retries</td>
+          </tr>
+          <tr>
+            <td><strong>Deciding</strong></td>
+            <td>The goal is fixed; evaluate the local step</td>
+            <td>Goal validity conditions drift over the trajectory</td>
+            <td>Whether the objective being optimized is still the one the user endorses</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 3. Taxonomy ── -->
+  <section class="paper-section" id="taxonomy">
+    <h2 class="section-heading"><span class="section-num">3</span>The Trajectory-Level Eval Taxonomy</h2>
+
+    <p>If the failure modes of long-running agents live at trajectory scope, the eval dimensions that target those failure modes must live there too. I propose five. Four map to the three AEI domains (Knowing contributes one, Doing contributes one, Deciding contributes two &mdash; splitting explicit constraint change from implicit cumulative drift, because they surface differently and require different operationalizations). The fifth is cross-cutting and addresses a reality the AEI framework acknowledges but does not develop: the increasing prevalence of multi-agent execution, in which epistemic and capability state must be transferred faithfully across agent boundaries.</p>
+
+    <p>For each dimension I give four things: what it measures, an operationalization sketch concrete enough to argue with, a proposed metric, and the key failure mode the dimension is designed to surface.</p>
+
+    <h3 class="subsection-heading" id="epistemic-drift-rate"><span class="subsection-num">3.1</span>Epistemic Drift Rate <span class="dim-header dim-knowing">Knowing</span></h3>
+
+    <p class="meta-row"><span class="meta-label">What it measures.</span> The rate at which an agent&rsquo;s active beliefs diverge from ground truth over a task trajectory.</p>
+
+    <p class="meta-row"><span class="meta-label">Operationalization sketch.</span> Construct a trajectory of length <em>N</em>, with <em>N</em>&nbsp;&ge;&nbsp;40 as a working lower bound for this dimension. Inject controlled ground-truth updates at pre-registered trajectory points &mdash; for example T<sub>10</sub>, T<sub>20</sub>, and T<sub>30</sub> &mdash; while preserving a post-injection observation window of at least W&nbsp;&ge;&nbsp;5 steps per update for measuring belief revision latency. Run this across the three staleness types catalogued in &sect;2.1 (world-state, goal-parameter, capability-contract) rather than treating staleness as monolithic.</p>
+
+    <p class="meta-row"><span class="meta-label">Proposed metric.</span> <em>Belief revision latency</em> &mdash; the number of trajectory steps between a ground-truth update and the agent&rsquo;s first action consistent with the update. Measured per staleness type, reported as a distribution rather than a single number, because the pathology of the distribution matters as much as its mean (an agent that revises beliefs within three steps on average but has a long tail of never-revised beliefs is qualitatively more dangerous than one with a higher mean and a thin tail).</p>
+
+    <p class="meta-row"><span class="meta-label">Scoring treatment.</span> The metric is censored at trajectory end if no update-consistent action occurs; censored values are reported separately from observed latencies rather than folded into the mean. Stale actions are severity-weighted by scope: internal-only reasoning counts at weight 1, actions that alter the plan at weight 2, and actions that commit external side effects at weight 3. The unweighted distribution is preserved for diagnostic resolution; the severity-weighted aggregate is the headline score. This distinguishes an agent that holds many stale beliefs without acting on them from one that commits externally on a single stale belief &mdash; two qualitatively different failures a naive latency mean would confound.</p>
+
+    <p class="meta-row"><span class="meta-label">Key failure mode.</span> <strong>Superseded-state persistence</strong> &mdash; the agent continues to act on a superseded belief for the remainder of the trajectory, because the update was observationally accessible but not explicitly surfaced.</p>
+
+    <p class="meta-row"><span class="meta-label">Why existing evals miss this.</span> GAIA and &tau;-bench test single-session retrieval; world-state during evaluation is static. Neither injects mid-trajectory ground-truth updates, because both were designed under the implicit freshness assumption the AEI framework names explicitly. Constructing mid-trajectory updates is not a minor extension to these benchmarks &mdash; it is a category shift.</p>
+
+    <h3 class="subsection-heading" id="interruption-resumption"><span class="subsection-num">3.2</span>Interruption and Resumption Fidelity <span class="dim-header dim-doing">Doing</span></h3>
+
+    <p class="meta-row"><span class="meta-label">What it measures.</span> Whether an agent can be interrupted mid-task and resume without state corruption, unsafe retries, or capability-state inconsistency.</p>
+
+    <p class="meta-row"><span class="meta-label">Operationalization sketch.</span> At a set of randomly-sampled trajectory midpoints, interrupt the agent, clear its in-context state entirely, and restart it with access only to its durable capability-state record and original goal. Observe whether it (a) retries actions that have already been completed, (b) correctly infers what remains from the capability-state record, (c) avoids re-committing side effects to external systems, and (d) correctly distinguishes actions that are safe to resume from actions that require confirmation. The sampled midpoints should be chosen adversarially rather than uniformly &mdash; points immediately after side-effect-bearing actions are the most diagnostic.</p>
+
+    <p class="meta-row"><span class="meta-label">Proposed metric.</span> <em>Resumption consistency score</em>, decomposed into three sub-scores: <em>duplicate-action error rate</em> (what fraction of already-completed actions does the agent re-attempt &mdash; lower is better), <em>remaining-work recall</em> (what fraction of still-required actions does it correctly identify &mdash; higher is better), and <em>side-effect recommitment error rate</em> (what fraction of already-committed external effects does the agent attempt to re-commit &mdash; lower is better). A headline <em>resumption fidelity score</em> can be derived as 1&nbsp;&minus;&nbsp;weighted error across the three sub-scores. Reporting sub-scores separately is important because they trade off and the aggregate is less informative than the decomposition.</p>
+
+    <p class="meta-row"><span class="meta-label">Scoring treatment.</span> Each sub-score has a natural denominator: duplicate-action error rate over the set of already-completed actions at the interrupt point; remaining-work recall over the set of remaining actions; side-effect recommitment error rate over the set of already-committed external effects. Rates are reported per trajectory and aggregated across trajectories; reporting only the aggregate hides trajectory-level pathology. False-positive aversion &mdash; the agent refusing to resume actions that are safe to resume &mdash; is captured as an inverse penalty on remaining-work recall, so a maximally timid agent that completes nothing does not post artificially clean error-rate scores.</p>
+
+    <p class="meta-row"><span class="meta-label">Key failure mode.</span> <strong>Phantom re-execution</strong> &mdash; the agent re-runs an action that has already produced external side effects, because its capability-state record is incomplete, because it was never written to be durable, or because the agent does not consult it on resumption.</p>
+
+    <p class="meta-row"><span class="meta-label">Connection to AEI.</span> This dimension directly operationalizes Prescription 2 of the AEI whitepaper: <em>capability state as a durable runtime artifact</em>. A system whose capability state is ephemeral cannot score well on this dimension; a system whose capability state is durable and queryable can, if the agent is correctly architected to use it. The eval is therefore simultaneously a diagnostic of the architecture and of the agent&rsquo;s behavior within it.</p>
+
+    <h3 class="subsection-heading" id="mid-task-replanning"><span class="subsection-num">3.3</span>Mid-Task Replanning Quality <span class="dim-header dim-deciding">Deciding</span></h3>
+
+    <p class="meta-row"><span class="meta-label">What it measures.</span> Whether an agent produces coherent, validity-preserving replans when mid-task conditions change through an explicit, observable trigger event.</p>
+
+    <p class="meta-row"><span class="meta-label">Operationalization sketch.</span> Inject mid-task constraint changes at pre-registered trajectory midpoints &mdash; a new deadline, a revoked permission, a superseding instruction, a capability that becomes unavailable. Unlike the silent updates of &sect;3.1, these are explicit and visible: they arrive as channel events the agent ought to notice. Measure three things: whether the agent detects the constraint change, whether it pauses and replans rather than continuing under the prior assumption, and whether the new plan is coherent with both the original goal and the injected constraint.</p>
+
+    <p class="meta-row"><span class="meta-label">Proposed metric.</span> <em>Replan coherence score</em>, produced by human or LLM-as-judge assessment of whether the new plan preserves original intent while correctly incorporating the new constraint. The judging protocol is itself nontrivial &mdash; see &sect;5 &mdash; but the dimension can be defined and worked against before the judging is fully solved.</p>
+
+    <p class="meta-row"><span class="meta-label">Scoring treatment.</span> The judge evaluates three properties separately: <em>constraint incorporation</em> (is the injected constraint reflected in the new plan), <em>intent preservation</em> (does the plan still pursue the original goal where compatible with the new constraint), and <em>internal coherence</em> (is the plan self-consistent). All three must pass for the replan to score as coherent; partial passes are reported on the sub-property that failed rather than collapsed into a scalar. Trajectories in which no replan occurs because no replan was warranted are excluded from the denominator; trajectories in which a replan was warranted but did not occur are scored zero on all three sub-properties, so silent continuation is penalized rather than evaded.</p>
+
+    <p class="meta-row"><span class="meta-label">Key failure mode.</span> <strong>Silent continuation</strong> &mdash; the agent detects the new constraint, acknowledges it in its execution trace, explicit plan, or state log, and then continues on a trajectory that now violates it. This is the behavior most consistent with current tuning pressures: models rewarded for task completion learn to treat constraints as obstacles to work around rather than invariants to replan under.</p>
+
+    <h3 class="subsection-heading" id="goal-drift-detection"><span class="subsection-num">3.4</span>Goal Drift Detection Over Long Horizons <span class="dim-header dim-deciding">Deciding</span></h3>
+
+    <p class="meta-row"><span class="meta-label">What it measures.</span> Whether an agent&rsquo;s active objective remains aligned with the user&rsquo;s current intent over multi-step trajectories in which intent shifts implicitly and cumulatively, without a single discrete trigger event.</p>
+
+    <p class="meta-row"><span class="meta-label">Operationalization sketch.</span> Construct trajectories where the user&rsquo;s effective preference shifts gradually across <em>N</em> steps &mdash; a cost-reduction priority that gives way to speed priority as a deadline slips closer; a privacy-preserving preference that gives way to convenience as the user provides increasingly granular context; a quality-first mandate that quietly relaxes as time pressure mounts. The shifts are not announced. They must be inferred from the cumulative texture of the interaction. Measure: how many steps elapse before the agent&rsquo;s actions reflect the new priority? And, critically: does the agent surface the inferred intent change to the user for confirmation, or does it silently reoptimize against the new objective without announcing that it has done so?</p>
+
+    <p class="meta-row"><span class="meta-label">Proposed metrics.</span> Two are needed, because they trade off. <em>Goal alignment latency</em> &mdash; how many steps between a meaningful shift in user intent and the agent&rsquo;s first action consistent with it. <em>Surface rate</em> &mdash; what fraction of detected intent changes the agent explicitly surfaces for confirmation versus silently absorbs. An agent with low latency and low surface rate is responsive but epistemically opaque; an agent with high latency and high surface rate is slow but steerable. Neither dominates, and the evaluation should report both.</p>
+
+    <p class="meta-row"><span class="meta-label">Scoring treatment.</span> Surface rate measured naively rewards agents that ask for confirmation on everything, which is neither useful nor steerable. The metric therefore decomposes into <em>surface precision</em> (fraction of surfaced intent changes that correspond to genuine material shifts) and <em>surface recall</em> (fraction of genuine material shifts that are surfaced). Materiality is defined by whether the shift would, if unacted upon, produce a trajectory the user would not endorse at the eval endpoint &mdash; operationalized via pre-registered ground-truth intent labels at each trajectory point. Alignment latency is itself materiality-gated: latency on non-material drift is not penalized, so an agent is not punished for continuing through inconsequential noise. This scoring makes it impossible to post strong numbers by either silent smoothness or reflexive confirmation-asking; both collapse into the precision/recall frontier.</p>
+
+    <p class="meta-row"><span class="meta-label">Key failure mode.</span> <strong>Silent reoptimization</strong> &mdash; the agent correctly infers that user intent has shifted and smoothly pivots, but without surfacing the pivot for confirmation. The user experiences this as the agent &ldquo;reading their mind&rdquo; when it succeeds and as inexplicable divergence when it fails; either outcome undermines the ability to steer the agent through the period in which the intent change is genuinely ambiguous.</p>
+
+    <p class="meta-row"><span class="meta-label">Distinction from &sect;3.3.</span> Replanning quality tests response to an explicit constraint injection &mdash; a discrete event the agent ought to notice. Goal drift detection tests response to cumulative implicit shift without any single discrete trigger. The distinction matters because the architectural mechanisms that succeed at the first can silently fail the second: an agent that monitors channel events for constraint changes will not detect drift that never produces a channel event.</p>
+
+    <h3 class="subsection-heading" id="handoff-fidelity"><span class="subsection-num">3.5</span>Multi-Agent Handoff Fidelity <span class="dim-header dim-cross">Cross-Cutting</span></h3>
+
+    <p class="meta-row"><span class="meta-label">What it measures.</span> Whether goal state, capability state, and epistemic state are faithfully transferred when task execution is handed from one agent to another &mdash; or from agent to human and back &mdash; without the receiving agent filling transfer gaps with plausible but incorrect inferences.</p>
+
+    <p class="meta-row"><span class="meta-label">Operationalization sketch.</span> Construct multi-agent pipelines in which a task is decomposed and handed off at predetermined trajectory points. At each handoff, vary the completeness of state transfer along three axes: knowledge (what beliefs are passed, and with what uncertainty annotations), capability state (what record of completed and remaining actions is passed), and goal (what specification of the objective, including validity conditions, is passed). Test not only clean handoffs but adversarial ones in which the transferred state is deliberately incomplete or ambiguous. Measure whether the receiving agent detects the incompleteness, asks for clarification, or confabulates a plausible completion and proceeds.</p>
+
+    <p class="meta-row"><span class="meta-label">Proposed metric.</span> <em>Handoff fidelity score</em>, decomposed into three parallel sub-scores: <em>knowledge fidelity</em> (did the receiving agent inherit the correct belief state, including uncertainty annotations, and recognize gaps rather than fill them), <em>capability-state fidelity</em> (did it inherit the correct record of completed and remaining actions), <em>goal fidelity</em> (did it receive and correctly interpret the goal, including validity conditions and constraints). As with resumption fidelity, the decomposition matters &mdash; an agent that scores well on knowledge and capability state but poorly on goal fidelity fails in a qualitatively different way than the inverse.</p>
+
+    <p class="meta-row"><span class="meta-label">Scoring treatment.</span> Each sub-score is evaluated on an adversarial scenario set in which the transferred state is deliberately incomplete or ambiguous. At each incompleteness point, the receiving agent&rsquo;s behavior is classified: detecting the incompleteness scores 1, requesting clarification scores 1, confabulating a plausible completion and proceeding scores 0. Receiving agents that request clarification on <em>complete</em> handoffs are not penalized on the fidelity sub-scores &mdash; that behavior is captured on a separate clarification-cost axis instead. This prevents the scoring from rewarding silent competence over surfaced uncertainty, which would be exactly the failure mode the dimension is designed to detect.</p>
+
+    <p class="meta-row"><span class="meta-label">Key failure mode.</span> <strong>Handoff hallucination</strong> &mdash; the receiving agent fills gaps in transferred state with plausible but incorrect inferences, producing coherent behavior that diverges from the original task intent. This is the multi-agent analogue of single-agent confabulation, and it compounds: in a pipeline of <em>k</em> handoffs, small confabulations at each handoff accumulate into a final state arbitrarily distant from the originating intent.</p>
+
+    <p class="meta-row"><span class="meta-label">Connection to AEI.</span> Current trace infrastructure can record and grade whether handoffs occurred, but it generally treats handoff as workflow behavior, not as a state-preservation object [OpenAIEvals]. The missing eval target is whether the receiving agent inherited belief state, capability state, and goal state faithfully enough to continue the trajectory without confabulation. No existing benchmark treats those three as a jointly-evaluated state-transfer integrity object; that is what this dimension addresses. It is also the multi-agent extension of all three AEI primitives simultaneously &mdash; the uncertainty audit trail, the capability-state record, and the prospective memory surface each need to survive the handoff intact.</p>
+
+    <div class="table-wrap">
+      <table>
+        <caption>Table 2. The five-dimension trajectory-level eval taxonomy. Each dimension targets a failure mode invisible to turn-level evaluation and maps to an AEI domain or, in the case of handoff fidelity, to all three simultaneously.</caption>
+        <thead>
+          <tr><th>Dimension</th><th>Domain</th><th>Proposed metric</th><th>Key failure mode</th><th>Gap in existing evals</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Epistemic drift rate</td>
+            <td>Knowing</td>
+            <td>Belief revision latency</td>
+            <td>Superseded-state persistence</td>
+            <td>World-state is static during eval</td>
+          </tr>
+          <tr>
+            <td>Interruption / resumption fidelity</td>
+            <td>Doing</td>
+            <td>Resumption consistency score</td>
+            <td>Phantom re-execution</td>
+            <td>Interruption and multi-session persistence not tested</td>
+          </tr>
+          <tr>
+            <td>Mid-task replanning quality</td>
+            <td>Deciding</td>
+            <td>Replan coherence score</td>
+            <td>Silent continuation</td>
+            <td>Mid-task constraint injection not supported</td>
+          </tr>
+          <tr>
+            <td>Goal drift detection</td>
+            <td>Deciding</td>
+            <td>Goal alignment latency + surface rate</td>
+            <td>Silent reoptimization</td>
+            <td>No model of evolving user intent</td>
+          </tr>
+          <tr>
+            <td>Multi-agent handoff fidelity</td>
+            <td>Cross-cutting</td>
+            <td>Handoff fidelity score (knowledge / capability / goal)</td>
+            <td>Handoff hallucination</td>
+            <td>Handoff treated as input, not as eval target</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 4. Positioning ── -->
+  <section class="paper-section" id="positioning">
+    <h2 class="section-heading"><span class="section-num">4</span>Positioning Against Existing Eval Frameworks</h2>
+
+    <p>The taxonomy proposed here is complementary to existing frameworks, not competitive with them. Trace- and trajectory-level evaluation is no longer missing from the field; the question is what shape it should take. Existing benchmarks now partially instantiate trajectory-aware evaluation, especially in safety and tool-calling domains. What they do not yet provide is an AEI-level decomposition of long-running state integrity: belief freshness, durable capability state, goal-validity lifecycle, and cross-agent state transfer. I organize the comparison into two groups.</p>
+
+    <h3 class="subsection-heading" id="closest-neighbors"><span class="subsection-num">4.1</span>Closest Trajectory-Level Neighbors</h3>
+
+    <p><strong>ATBench</strong> [ATBench] is the closest academic neighbor to the framework proposed here. It is explicitly a trajectory-level safety benchmark &mdash; a thousand trajectories constructed to surface risks that emerge over long-context execution, with delayed-trigger scenarios designed to catch unsafe behavior that turn-level evaluation would miss. Its coverage is strongest on Doing and Deciding safety: unsafe tool invocations and risky decisions that compound. Its structural gap, relative to this paper, is that it does not decompose trajectory integrity into the five dimensions proposed here. Epistemic drift rate with controlled ground-truth injection, resumption consistency under interruption, and handoff fidelity are not first-class targets of the current ATBench design. The taxonomy is complementary: ATBench provides concrete adversarial trajectories; this paper provides the decomposition that structures what the benchmark should measure.</p>
+
+    <p><strong>FinTrace</strong> [FinTrace] operationalizes holistic trajectory-level evaluation in the financial tool-calling domain, with a set of trajectory-level metrics over expert-annotated trajectories. Its framing &mdash; measure the arc, not the step &mdash; is exactly the framing this paper argues for in the general agentic case. Its scope is the financial domain and the tool-calling subset of Doing. The taxonomy generalizes that framing across Knowing, Doing, Deciding, and handoff, and gives FinTrace-style evaluation a domain-independent scaffold.</p>
+
+    <p><strong>Production trace-grading infrastructure.</strong> OpenAI&rsquo;s agent evaluation tooling defines traces as end-to-end records of model calls, tool calls, guardrails, and handoffs, and supports trace-level grading as a first-class operation [OpenAIEvals]. Anthropic&rsquo;s harness work for long-running agents emphasizes continuity across many context windows and structured artifacts as the substrate for long-horizon execution [AnthropicHarness]. These are engineering patterns, not benchmarks, but they matter here because they establish trace-level grading and long-horizon harness as production realities, not research proposals. The taxonomy proposed in this paper gives that engineering direction a state-integrity target: what the grading should measure, and what properties the harness must expose to make the measurement tractable.</p>
+
+    <h3 class="subsection-heading" id="adjacent-evals"><span class="subsection-num">4.2</span>Adjacent Agent and Tool Evals</h3>
+
+    <p><strong>&tau;-bench</strong> [&tau;-bench] is strong on session-level tool-correctness in realistic domains. Its blind spot is the long-running regime: it does not test capability-state accumulation across resumptions, inject mid-trajectory world-state updates, or vary handoff completeness. Extending &tau;-bench in any of these directions is a category shift rather than a parameter adjustment.</p>
+
+    <p><strong>GAIA</strong> [GAIA] tests reasoning and tool use in single-session settings with static world state. Its regime is session-bounded by design; there is no adjustment to the GAIA setup that would produce a measurement of belief revision latency or resumption consistency, because the phenomena those metrics target do not occur in a single session with static state.</p>
+
+    <p><strong>AgentBench</strong> [AgentBench] evaluates agents across multiple environments with per-task success as the aggregate metric. Horizontal coverage is the contribution; trajectory depth is the blind spot.</p>
+
+    <p><strong>When2Call</strong> [When2Call] addresses a question orthogonal to but important for the taxonomy: restraint is a trajectory-level property, and the correct decision not to act is visible only against the alternative trajectories it precludes. <strong>MCPVerse</strong> [MCPVerse] scales the tool-use benchmark surface; combined with trajectory-level metrics, it makes trajectory evaluation feasible at the scale current agentic systems operate at.</p>
+
+    <p>The taxonomy also sits downstream of agent-architecture work rather than competing with it. ReAct [ReAct] and Reflexion [Reflexion] shaped the action/observation/self-correction loop that underlies how agents are built; CoALA [CoALA] and MemGPT [MemGPT] helped formalize memory and cognitive architecture for language agents; prospective-memory theory [Brandimonte] supplies the cognitive baseline for the forward-looking obligation primitive that AEI makes architectural. The present paper asks how those capabilities should be evaluated once the unit of analysis is a long-running trajectory rather than a single session or task &mdash; a question the architecture literature was not designed to answer.</p>
+
+    <h3 class="subsection-heading" id="comparison-table"><span class="subsection-num">4.3</span>Coverage Comparison</h3>
+
+    <div class="table-wrap">
+      <table>
+        <caption>Table 3. Coverage comparison across adjacent evaluation frameworks. &ldquo;Partial&rdquo; indicates the framework supports the capability in a restricted form (e.g., delayed triggers rather than arbitrary mid-trajectory injection). The proposed taxonomy is the bottom row; it is not itself a benchmark, but it specifies what a benchmark covering all five dimensions would measure.</caption>
+        <thead>
+          <tr>
+            <th>Framework</th>
+            <th>Eval unit</th>
+            <th>State injection</th>
+            <th>Interruption / resumption</th>
+            <th>Goal drift</th>
+            <th>Handoff fidelity</th>
+            <th>AEI coverage</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ATBench</td>
+            <td>Trajectory</td>
+            <td>Partial</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Doing / Deciding safety</td>
+          </tr>
+          <tr>
+            <td>FinTrace</td>
+            <td>Trajectory</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Doing (tool calling)</td>
+          </tr>
+          <tr>
+            <td>OpenAI trace grading</td>
+            <td>Trace</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Surface only</td>
+            <td>Engineering substrate</td>
+          </tr>
+          <tr>
+            <td>Anthropic harness</td>
+            <td>Episode</td>
+            <td>N/A</td>
+            <td>Engineering pattern, not standardized eval</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Engineering substrate</td>
+          </tr>
+          <tr>
+            <td>&tau;-bench</td>
+            <td>Turn / session</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Session Doing</td>
+          </tr>
+          <tr>
+            <td>GAIA</td>
+            <td>Episode (single session)</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Session Knowing / Deciding</td>
+          </tr>
+          <tr>
+            <td>AgentBench</td>
+            <td>Episode</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Breadth</td>
+          </tr>
+          <tr>
+            <td>When2Call</td>
+            <td>Turn (restraint)</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Doing (refusal)</td>
+          </tr>
+          <tr>
+            <td>MCPVerse</td>
+            <td>Turn (tool call)</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Doing (scale)</td>
+          </tr>
+          <tr>
+            <td><strong>This paper</strong></td>
+            <td><strong>Trajectory (state integrity)</strong></td>
+            <td><strong>Yes (three staleness types)</strong></td>
+            <td><strong>Yes</strong></td>
+            <td><strong>Yes</strong></td>
+            <td><strong>Yes</strong></td>
+            <td><strong>Full AEI + cross-cutting</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>The positioning claim is therefore modest and defensible: no single current benchmark covers the five dimensions proposed here, but several current benchmarks instantiate one or two of them partially, and the field&rsquo;s direction of travel is toward trajectory-aware evaluation. The taxonomy is offered as a scaffold that direction of travel can be organized by.</p>
+  </section>
+
+  <!-- ── 5. Implementation ── -->
+  <section class="paper-section" id="implementation">
+    <h2 class="section-heading"><span class="section-num">5</span>Implementation Considerations and a Harness Blueprint</h2>
+
+    <p>A taxonomy that cannot be implemented against is decorative. This section addresses four implementation considerations that are, in my judgment, the concrete research problems that gate moving from this framework to a deployable eval harness, and closes with a sketch of the harness architecture itself.</p>
+
+    <h3 class="subsection-heading" id="ground-truth"><span class="subsection-num">5.1</span>Ground-Truth Injection Without Breaking Ecological Validity</h3>
+
+    <p>The epistemic drift rate dimension requires mid-trajectory ground-truth updates. Naive injection &mdash; a message to the agent saying &ldquo;the price has changed&rdquo; &mdash; collapses into testing reading comprehension rather than belief revision. The more interesting injection is indirect: a document the agent has access to is updated; a tool&rsquo;s return values begin reflecting the new state; a peripheral channel carries the update in a form the agent must notice without being told to look. Designing injection protocols that exercise genuine belief revision rather than explicit instruction following is a research problem worth its own paper.</p>
+
+    <h3 class="subsection-heading" id="trajectory-length"><span class="subsection-num">5.2</span>Minimum Trajectory Lengths</h3>
+
+    <p>Each dimension has a length threshold below which the measurement is not meaningful. Epistemic drift rate requires a trajectory long enough for multiple ground-truth updates to be injected and responded to, with a meaningful observation window after each &mdash; I suggest <em>N</em>&nbsp;&ge;&nbsp;40 as a working threshold. Goal drift detection requires enough cumulative interaction for intent shift to be plausibly inferable &mdash; I suggest <em>N</em>&nbsp;&ge;&nbsp;20. Interruption and resumption fidelity requires multi-session persistence &mdash; minimally two sessions separated by full in-context state loss. Handoff fidelity requires at least two agents in a pipeline and is more diagnostic with three or more. Below these thresholds, the measurement can appear to succeed for reasons orthogonal to what the dimension is designed to surface.</p>
+
+    <h3 class="subsection-heading" id="judge-at-scope"><span class="subsection-num">5.3</span>LLM-as-Judge at Trajectory Scope</h3>
+
+    <p>Turn-level LLM-as-judge protocols are well-studied: the judge is shown an input and an output and asked to score. Trajectory-level judging is a different object. The judge must reason about state across <em>N</em> steps, hold in mind what the user originally asked and how their stated or implied intent has shifted, and assess whether the agent&rsquo;s cumulative behavior preserves intent under constraint change. This is a research problem &mdash; not an engineering problem &mdash; because the judge&rsquo;s capability to do this assessment is itself a function of the same long-context and state-tracking limitations that motivate the taxonomy in the first place. An honest implementation will acknowledge that early trajectory-level evals will be partially judge-limited and will need to combine automated judging with human spot-checking until judging capability catches up.</p>
+
+    <h3 class="subsection-heading" id="annotation-cost"><span class="subsection-num">5.4</span>Annotation Cost and Partial Automation</h3>
+
+    <p>Trajectory-level eval is dramatically more expensive per data point than turn-level. A single trajectory of <em>N</em>&nbsp;=&nbsp;30 steps with three ground-truth injections and a handoff costs roughly an order of magnitude more to annotate than a comparable set of individual turns. This cost pressure is real, and the field will need evaluation architectures that partially automate trajectory assessment. The two-stage memory generation architecture I described in earlier work [TwoStage] is a pattern worth applying here: async, offline processing over the trajectory to extract structured evaluation signals, followed by online human or judge review of only the signals that warrant it. The same logic that made memory generation tractable at scale can make trajectory evaluation tractable at scale; the mechanism differs, but the architectural pattern carries over.</p>
+
+    <h3 class="subsection-heading" id="harness-blueprint"><span class="subsection-num">5.5</span>Harness Blueprint</h3>
+
+    <p>A harness capable of evaluating all five dimensions decomposes into ten components. Each component has a single purpose and maps to a definite subset of the taxonomy. The blueprint is deliberately spare: each component is architectural, not implementation-specific, and multiple implementations can satisfy the same component contract. This is the <em>stable-what</em> treatment applied to the harness itself.</p>
+
+    <div class="table-wrap">
+      <table>
+        <caption>Table 4. Harness component blueprint. Each component is defined by its purpose and the taxonomy dimensions it supports. The mapping is many-to-many: most dimensions require multiple components, and most components contribute to multiple dimensions.</caption>
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Purpose</th>
+            <th>Dimensions supported</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Scenario generator</td>
+            <td>Produce trajectories with pre-registered event structures, goal specifications, and validity conditions</td>
+            <td>All</td>
+          </tr>
+          <tr>
+            <td>Ground-truth ledger</td>
+            <td>Track authoritative world state, goal state, and user intent at each trajectory step</td>
+            <td>3.1, 3.3, 3.4</td>
+          </tr>
+          <tr>
+            <td>Event injector</td>
+            <td>Inject world-state updates, constraint changes, and implicit intent shifts at pre-registered points</td>
+            <td>3.1, 3.3, 3.4</td>
+          </tr>
+          <tr>
+            <td>Checkpoint / resumption manager</td>
+            <td>Interrupt agents mid-trajectory and restart them from durable state only, with in-context memory cleared</td>
+            <td>3.2</td>
+          </tr>
+          <tr>
+            <td>Side-effect sandbox</td>
+            <td>Capture external commitments so the harness can distinguish already-committed effects from safe-to-replay ones</td>
+            <td>3.2</td>
+          </tr>
+          <tr>
+            <td>Handoff corruptor</td>
+            <td>Produce adversarial handoff scenarios with partial or ambiguous state transfer</td>
+            <td>3.5</td>
+          </tr>
+          <tr>
+            <td>State probes</td>
+            <td>Query the agent&rsquo;s belief, capability, and goal state at any trajectory point. Probes should read externalized runtime artifacts rather than prompting the agent to explain itself mid-run; otherwise the probe can perturb the trajectory being measured.</td>
+            <td>All</td>
+          </tr>
+          <tr>
+            <td>Deterministic graders</td>
+            <td>Score metrics with closed-form answers &mdash; latency, duplicate-action rate, side-effect commitment rate</td>
+            <td>3.1, 3.2</td>
+          </tr>
+          <tr>
+            <td>LLM judge</td>
+            <td>Score trajectory-scope properties requiring state reasoning &mdash; replan coherence, surface precision, handoff confabulation</td>
+            <td>3.3, 3.4, 3.5</td>
+          </tr>
+          <tr>
+            <td>Human adjudication queue</td>
+            <td>Review judge decisions flagged as ambiguous or low-confidence, with structured disagreement capture</td>
+            <td>3.3, 3.4, 3.5</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Two observations about the blueprint. First, the ground-truth ledger and the state probes are the load-bearing components: every other component either writes into the ledger (scenario generator, event injector) or reads from it for scoring (graders, judge, adjudication queue). A harness whose ledger is weakly specified cannot evaluate any dimension soundly, because the eval reduces to comparing the agent&rsquo;s state against an uncertain reference. Second, the deterministic-grader / LLM-judge split roughly tracks the taxonomy&rsquo;s own split between closed-form and interpretive dimensions. This is a structural feature worth preserving: trajectories in which all dimensions can be scored deterministically are useful for regression testing; trajectories requiring judge adjudication are where the field&rsquo;s current evaluation research should concentrate.</p>
+  </section>
+
+  <!-- ── 6. Conclusion ── -->
+  <section class="paper-section" id="conclusion">
+    <h2 class="section-heading"><span class="section-num">6</span>Conclusion</h2>
+
+    <p>This paper proposes a trajectory-level eval taxonomy for long-running agentic workflows, organized around five dimensions: epistemic drift rate, interruption and resumption fidelity, mid-task replanning quality, goal drift detection, and multi-agent handoff fidelity. The first four map to the three AEI domains of Knowing, Doing, and Deciding. The fifth is cross-cutting and addresses the multi-agent extension the AEI framework acknowledges but does not develop. Each dimension targets a failure mode &mdash; superseded-state persistence, phantom re-execution, silent continuation, silent reoptimization, handoff hallucination &mdash; that is invisible at turn scope and only partially covered by current trajectory-aware benchmarks. The claim is not that no one is evaluating trajectories; it is that the field lacks a stable taxonomy for evaluating the integrity of the state that long-running trajectories carry.</p>
+
+    <p>The contribution is conceptual. I have argued for what should be measured, not for a specific measurement instrument. The next step is the harness: synthetic trajectory generation with controlled mid-task injections, adversarial handoff scenarios, trajectory-scale LLM-as-judge protocols, and the annotation architectures that make all of this tractable at the scale frontier systems operate at. That work is the research agenda that follows from this framework, not a prerequisite for it. The contribution here is the <em>stable what</em>: the requirement that long-running agents be evaluated at trajectory scope, decomposed along dimensions that reflect the state-integrity obligations that scope reveals. The <em>volatile how</em> &mdash; benchmarks, harnesses, metric formalizations &mdash; is the engineering and research agenda the framework organizes.</p>
+  </section>
+
+  <!-- ── References ── -->
+  <section class="paper-section" id="references">
+    <h2 class="section-heading"><span class="section-num">—</span>References</h2>
+    <ul class="references-list">
+      <li>
+        <span class="ref-tag">[AEI]</span>
+        Shen, I. (2026). Agent Epistemic Integrity: A Framework for Knowing, Doing, and Deciding Across the Session-to-Long-Running Transition. <em>iris-axon-lab.github.io</em>. <a href="https://iris-axon-lab.github.io/writing/2026/04/15/agentic-epistemic-integrity-whitepaper.html">link</a>
+      </li>
+      <li>
+        <span class="ref-tag">[AgentBench]</span>
+        Liu, X., Yu, H., Zhang, H., Xu, Y., Lei, X., Lai, H., Gu, Y., Ding, H., Men, K., Yang, K., Zhang, S., Deng, X., Zeng, A., Du, Z., Zhang, C., Shen, S., Zhang, T., Su, Y., Sun, H., Huang, M., Dong, Y., &amp; Tang, J. (2023). AgentBench: Evaluating LLMs as Agents. <em>arXiv:2308.03688</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[AnthropicHarness]</span>
+        Anthropic. (2025). Effective harnesses for long-running agents. <em>Anthropic Engineering</em>. <a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">link</a>
+      </li>
+      <li>
+        <span class="ref-tag">[ATBench]</span>
+        Li, Y., Luo, H., Xie, Y., Fu, Y., Yang, Z., Shao, S., Ren, Q., Qu, W., Fu, Y., Yang, Y., Shao, J., Hu, X., &amp; Liu, D. (2026). ATBench: A Diverse and Realistic Agent Trajectory Benchmark for Safety Evaluation and Diagnosis. <em>arXiv:2604.02022</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[Brandimonte]</span>
+        Brandimonte, M. A., Einstein, G. O., &amp; McDaniel, M. A. (Eds.). (1996). <em>Prospective Memory: Theory and Applications</em>. Lawrence Erlbaum Associates.
+      </li>
+      <li>
+        <span class="ref-tag">[CoALA]</span>
+        Sumers, T. R., Yao, S., Narasimhan, K., &amp; Griffiths, T. L. (2023). Cognitive Architectures for Language Agents. <em>arXiv:2309.02427</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[FinTrace]</span>
+        Cao, Y., Li, H., Liu, W., Cao, W., Xu, A., Qian, L., Peng, X., Tang, M., Yao, Z., Huang, J., Subbalakshmi, K. P., Zhu, Z., Suchow, J. W., &amp; Yu, Y. (2026). FinTrace: Holistic Trajectory-Level Evaluation of LLM Tool Calling for Long-Horizon Financial Tasks. <em>arXiv:2604.10015</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[FourTier]</span>
+        Shen, I. (2026). A Four-Tier Memory Taxonomy for Enterprise Agentic Systems. <em>iris-axon-lab.github.io</em>. <a href="https://iris-axon-lab.github.io/writing/2026/02/15/four-tier-memory-taxonomy.html">link</a>
+      </li>
+      <li>
+        <span class="ref-tag">[GAIA]</span>
+        Mialon, G., Fourrier, C., Swift, C., Wolf, T., LeCun, Y., &amp; Scialom, T. (2023). GAIA: A Benchmark for General AI Assistants. <em>arXiv:2311.12983</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[MCPVerse]</span>
+        Lei, F., Yang, Y., Sun, W., &amp; Lin, D. (2025). MCPVerse: An Expansive, Real-World Benchmark for Agentic Tool Use. <em>arXiv:2508.16260</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[MemGPT]</span>
+        Packer, C., Wooders, S., Lin, K., Fang, V., Patil, S. G., Stoica, I., &amp; Gonzalez, J. E. (2023). MemGPT: Towards LLMs as Operating Systems. <em>arXiv:2310.08560</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[OpenAIEvals]</span>
+        OpenAI. (2025). Evaluate agent workflows. <em>OpenAI Developer Documentation</em>. <a href="https://developers.openai.com/api/docs/guides/agent-evals">link</a>
+      </li>
+      <li>
+        <span class="ref-tag">[Quality]</span>
+        Shen, I. (2026). Quality Architecture for Agentic Skills and Tools. <em>iris-axon-lab.github.io</em>. <a href="https://iris-axon-lab.github.io/writing/2026/03/31/quality-architecture-skills-tools.html">link</a>
+      </li>
+      <li>
+        <span class="ref-tag">[ReAct]</span>
+        Yao, S., Zhao, J., Yu, D., Du, N., Shafran, I., Narasimhan, K., &amp; Cao, Y. (2022). ReAct: Synergizing Reasoning and Acting in Language Models. <em>arXiv:2210.03629</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[Reflexion]</span>
+        Shinn, N., Cassano, F., Berman, E., Gopinath, A., Narasimhan, K., &amp; Yao, S. (2023). Reflexion: Language Agents with Verbal Reinforcement Learning. <em>arXiv:2303.11366</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[Runtime]</span>
+        Shen, I. (2026). The Agentic Runtime Layer: A 3&times;2 Framework for Session and Long-Running Operation. <em>iris-axon-lab.github.io</em>. <a href="https://iris-axon-lab.github.io/writing/2026/04/12/agentic-runtime-layer.html">link</a>
+      </li>
+      <li>
+        <span class="ref-tag">[TwoStage]</span>
+        Shen, I. (2026). A Two-Stage Agentic Memory Generation Architecture. <em>iris-axon-lab.github.io</em>. <a href="https://iris-axon-lab.github.io/writing/2026/02/01/two-stage-memory-architecture.html">link</a>
+      </li>
+      <li>
+        <span class="ref-tag">[&tau;-bench]</span>
+        Yao, S., Shinn, N., Razavi, P., &amp; Narasimhan, K. (2024). &tau;-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains. <em>arXiv:2406.12045</em>.
+      </li>
+      <li>
+        <span class="ref-tag">[When2Call]</span>
+        Ross, H., Mahabaleshwarkar, A. S., &amp; Suhara, Y. (2025). When2Call: When (not) to Call Tools. <em>arXiv:2504.18851</em>.
+      </li>
+    </ul>
+  </section>
+
+</div>
+
+<footer>
+  <span>© Iris Shen · <a href="/">iris-axon-lab.github.io</a></span>
+</footer>
+
+{% include site-footer.html %}
+
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  const header = document.querySelector('.paper-header');
+  if (header) setTimeout(() => header.classList.add('visible'), 60);
+
+  const earlySections = ['.abstract-section', '.toc'];
+  earlySections.forEach((sel, i) => {
+    const el = document.querySelector(sel);
+    if (el) setTimeout(() => el.classList.add('visible'), 180 + i * 100);
+  });
+
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.04 });
+
+  document.querySelectorAll('.paper-section').forEach(el => io.observe(el));
+});
+</script>
+
+</body>
+</html>
