@@ -239,6 +239,23 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
   <hr class="header-rule">
 
+  <!-- ── 0 ── intro / context -->
+  <section class="paper-section" id="s0">
+    <p style="font-style: italic; color: var(--ink2);">
+      This is the row-preservation chapter of a five-cycle training trajectory run on
+      <a href="https://github.com/iris-axon-lab/iris-ft-lab">iris-ft-lab</a>, a small Apple Silicon
+      fine-tuning lab. The harness it tests against is collab-eval, a document-task grader
+      documented in <a href="/builders/2026/04/25/collab-eval-builders-notes.html">collab-eval &mdash;
+      Reward Design for Document Tasks</a>. Across four SFT runs and one DPO run, none of which
+      promoted, the failure was specific and structural: SFT and DPO supervise pre-computed
+      outputs, but row preservation is a generation-time policy decision. The Knowing/Doing/Deciding
+      framing of this and the lab&rsquo;s other failures lives in
+      <a href="/builders/2026/04/28/failure-modes-knowing-doing-deciding.html">Knowing, Doing,
+      Deciding &mdash; applied to a fine-tuning lab</a>. This post is the trajectory-specific
+      narrative.
+    </p>
+  </section>
+
   <!-- ── 1 ── -->
   <section class="paper-section" id="s1">
     <h2 class="section-heading"><span class="section-num">1</span>Why spreadsheet cleanup is a virtual-collaborator task</h2>

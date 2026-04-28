@@ -343,11 +343,19 @@ description: "Builder's notes for collab-eval — a task environment and grader 
   </div>
 
   <div class="note-block" style="margin-top:1.4rem;">
-    <strong>Current artifact boundary:</strong> This is not a model benchmark. It is a
-    grader-harness artifact designed to expose reward-design failure modes before any
-    training run exists. The base composite score (0.67) reflects a curated synthetic
-    quality range, not model inference. An RL checkpoint and LLM-judge calibration are
-    the next milestones before this becomes a measurement artifact.
+    <strong>How to read this note.</strong> collab-eval is a task environment and grader harness
+    for open-ended document manipulation, built to make reward design explicit before any RL loop
+    sees the signal. The harness was the starting point for a five-cycle fine-tuning trajectory
+    on <a href="https://github.com/iris-axon-lab/iris-ft-lab">iris-ft-lab</a>: four SFT runs
+    (recipe, data quantity, curriculum) and one DPO run (preference pairs over preserve-vs-drop).
+    None promoted &mdash; stress <code>data_preservation</code> stayed in the 0.20&ndash;0.25 band
+    across every run; the trajectory itself became the result. Sections 01&ndash;07 document the
+    harness as designed; sections 08&ndash;10 cover the deterministic eval suite, the fine-tuning
+    trajectory, and the lab-level open questions that fell out of it. Cross-cutting analysis
+    lives in <a href="/builders/2026/04/28/failure-modes-knowing-doing-deciding.html">Knowing, Doing,
+    Deciding &mdash; applied to a fine-tuning lab</a>; the row-preservation chapter specifically lives
+    in <a href="/writing/2026/04/28/sft-dpo-row-preservation.html">When SFT and DPO could not teach
+    &ldquo;don&rsquo;t drop the row&rdquo;</a>.
   </div>
 
   <!-- Section 01 -->
@@ -680,7 +688,7 @@ description: "Builder's notes for collab-eval — a task environment and grader 
   </p>
 
   <!-- Section 08 -->
-  <h2><span class="n">08</span> Session log &mdash; April 25, 2026</h2>
+  <h2><span class="n">08</span> Deterministic eval suite</h2>
 
   <div class="status-bar">
     <span class="pill green">✓ offline pytest suite</span>
@@ -722,10 +730,9 @@ description: "Builder's notes for collab-eval — a task environment and grader 
   </p>
 
   <div class="note-block">
-    The FT v1 row in the results table is an explicit placeholder, not an empty cell. It is labeled
-    "no RL checkpoint exists for collab-eval; training run required." That distinction matters: an
-    absent row looks like missing data; a labeled placeholder is a deliberate signal that the
-    measurement is pending. The harness is ready. The training run is not done yet.
+    The FT v1 row in <code>results/eval_results_v1.md</code> was originally a labeled placeholder
+    pending a training run. That training has since happened &mdash; see &sect;09 for the trajectory
+    and the result.
   </div>
 
   <p>
@@ -751,60 +758,83 @@ description: "Builder's notes for collab-eval — a task environment and grader 
     is therefore the public-facing narrative layer; the repo remains the runnable artifact and result log.
   </p>
 
+  <!-- Section 09 -->
+  <h2><span class="n">09</span> Fine-tuning trajectory</h2>
+
+  <p>
+    Five training cycles ran against the spreadsheet_clean environment. SFT v0 mode-collapsed
+    under too-aggressive recipe (rank 8, zero dropout, 1000 iters); v1 fixed the recipe and lifted
+    regular composite to 0.99 but stress <code>data_preservation</code> came in at 0.25; v2 doubled
+    stress training data &mdash; flat at 0.25; v3 ran two-phase curriculum (stress-only first, then
+    mixed at lower LR) &mdash; flat at 0.25; DPO v0 trained 80 preserve-vs-drop preference pairs,
+    learned the discrimination trivially (loss collapse to 0.001 by iter 30, train accuracy 1.0),
+    and regressed preservation to 0.20 with collateral damage to <code>unit_consistency</code>.
+    Across four targeted preservation interventions spanning two instrument families, the metric
+    did not move. Co-located metrics on the same eval (<code>unit_consistency</code>,
+    <code>format_validity</code>) transferred cleanly, ruling out recipe or capacity as the
+    bottleneck. The structural reason &mdash; preservation is a generation-time policy decision while
+    SFT and DPO supervise pre-computed outputs &mdash; is the headline finding. The full
+    row-preservation trajectory and analysis is in
+    <a href="/writing/2026/04/28/sft-dpo-row-preservation.html">When SFT and DPO could not teach
+    &ldquo;don&rsquo;t drop the row&rdquo;</a>; the cross-cutting lessons across all 15 catalogued
+    failures are in <a href="/builders/2026/04/28/failure-modes-knowing-doing-deciding.html">Knowing,
+    Doing, Deciding &mdash; applied to a fine-tuning lab</a>.
+  </p>
+
   <ul class="next-list">
     <li>
       <span class="tag done">done</span>
       Five training cycles run against the spreadsheet_clean environment: SFT v0 (mode-collapsed),
       SFT v1 (gentler recipe), SFT v2 (more stress data), SFT v3 (curriculum learning), and DPO v0
       (preference learning over preserve-vs-drop pairs). All five NOT PROMOTED. Stress
-      <code>data_preservation</code> stayed in the 0.20–0.25 band across every run; the 0.85 promotion gate
-      held the line. Full per-run reports under <code>collab-eval/results/</code> in
+      <code>data_preservation</code> stayed in the 0.20&ndash;0.25 band across every run; the 0.85
+      promotion gate held the line. Full per-run reports under <code>collab-eval/results/</code> in
       <a href="https://github.com/iris-axon-lab/iris-ft-lab">iris-axon-lab/iris-ft-lab</a>.
     </li>
     <li>
       <span class="tag done">done</span>
       Identified the structural reason: row preservation is a generation-time policy decision,
       and SFT positive demonstrations + DPO preference pairs both supervise pre-computed outputs.
-      Neither instrument reaches the per-step generation decision. The five-reason analysis lives in
-      <a href="https://github.com/iris-axon-lab/iris-ft-lab/blob/main/collab-eval/docs/preservation_analysis.md"><code>collab-eval/docs/preservation_analysis.md</code></a>;
-      the long-form story is <a href="/writing/2026/04/28/sft-dpo-row-preservation.html">the companion writing post</a>.
-    </li>
-    <li>
-      <span class="tag scope">intentionally out of scope</span>
-      The next standard instrument would be RL with grader-as-reward
-      (PPO or GRPO via mlx-lm-lora's <code>--train-mode grpo</code>), but iterating further would not change
-      the research conclusion. The trajectory itself is the result.
-    </li>
-    <li>
-      <span class="tag soon">soon</span>
-      Configure the LLM judge for the document-revision and citation-grounded environments.
-      Four dimensions — faithfulness, quality_delta, citation_accurate, hallucination_flag — still
-      hold at 0.5 in deterministic-only mode. The spreadsheet-cleanup track is closed; the
-      document-task tracks remain open for LLM-judge wiring.
+      Neither instrument reaches the per-step generation decision. The five-reason analysis lives
+      in <a href="https://github.com/iris-axon-lab/iris-ft-lab/blob/main/collab-eval/docs/preservation_analysis.md"><code>collab-eval/docs/preservation_analysis.md</code></a>.
     </li>
   </ul>
 
-  <!-- Section 09 -->
-  <h2><span class="n">09</span> Session log &mdash; April 28, 2026</h2>
+  <!-- Section 10 -->
+  <h2><span class="n">10</span> Next steps &amp; open questions</h2>
 
   <p>
-    Five training cycles wrapped between April 26 and April 28. SFT v0/v1/v2/v3 and DPO v0 all
-    NOT PROMOTED &mdash; stress <code>data_preservation</code> flat in the 0.20&ndash;0.25 band across every run. The
-    flat trajectory is the headline finding: across four targeted preservation interventions
-    spanning two instrument families (SFT positive demonstrations &times; three configurations and
-    DPO preference learning &times; one configuration), the metric did not move. Co-located metrics on
-    the same eval (<code>unit_consistency</code>, <code>format_validity</code>) all transferred cleanly, ruling out recipe
-    or capacity as the bottleneck. The structural reason &mdash; preservation is a generation-time
-    policy decision while SFT/DPO supervise pre-computed outputs &mdash; is documented in
-    <a href="https://github.com/iris-axon-lab/iris-ft-lab/blob/main/collab-eval/docs/preservation_analysis.md"><code>collab-eval/docs/preservation_analysis.md</code></a>
-    and narrated in <a href="/writing/2026/04/28/sft-dpo-row-preservation.html">the companion writing post</a>.
+    The harness-level next steps from &sect;06 still apply &mdash; calibrate LLM judge rubrics,
+    parameterize task generation, wire a real RL loop &mdash; but the trajectory adds two lab-level
+    questions worth flagging.
   </p>
 
-  <p>
-    Stopping the spreadsheet-cleanup training sequence here. The next standard instrument would be
-    RL with the grader as reward, but iterating further on this target would not change the
-    research conclusion: the training instrument must match where the behavior is decided.
-  </p>
+  <ul class="next-list">
+    <li>
+      <span class="tag scope">intentionally out of scope</span>
+      The next standard instrument for row preservation would be RL with grader-as-reward (PPO
+      or GRPO via mlx-lm-lora&rsquo;s <code>--train-mode grpo</code>). The hypothesis is well-defined:
+      rollout-time feedback should cross the Knowing/Doing gap that SFT and DPO could not. Iterating
+      further on this single target is intentionally left out of scope for this iteration of the
+      lab &mdash; the catalog of negative results is already the contribution. The experiment remains
+      a well-formed open question for future work.
+    </li>
+    <li>
+      <span class="tag soon">soon</span>
+      Configure the LLM judge for the document-revision and citation-grounded environments. Four
+      dimensions &mdash; faithfulness, quality_delta, citation_accurate, hallucination_flag &mdash; still
+      hold at 0.5 in deterministic-only mode. The spreadsheet-cleanup track is closed; the
+      document-task tracks remain open for LLM-judge wiring.
+    </li>
+    <li>
+      <span class="tag later">later</span>
+      Extend the trajectory-eval taxonomy to training trajectories explicitly. The lab&rsquo;s
+      promotion gates, bucket classifications, and cumulative flat-metric signaling all behave
+      like trajectory-level eval surfaces &mdash; but they&rsquo;re scattered across four reports and
+      one catalog. A second-pass writing post would naturally unify them as
+      &ldquo;trajectory-level eval for training&rdquo;.
+    </li>
+  </ul>
 
   <!-- Footer -->
   <div class="footer">
