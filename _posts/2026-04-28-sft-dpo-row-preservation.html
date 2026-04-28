@@ -1,0 +1,372 @@
+---
+layout: null
+title: "When SFT and DPO could not teach 'don't drop the row'"
+date: 2026-04-28
+categories: [writing]
+description: "Five training cycles — SFT v0 through v3 and DPO v0 — all failed to lift stress data_preservation past 0.25. The structural reason: row preservation is a generation-time policy decision, and SFT/DPO supervise pre-computed outputs. The training instrument must match where the behavior is decided."
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>When SFT and DPO could not teach 'don't drop the row' — Iris Shen</title>
+<meta name="description" content="Five training cycles — SFT v0 through v3 and DPO v0 — all failed to lift stress data_preservation past 0.25. The structural reason: row preservation is a generation-time policy decision, and SFT/DPO supervise pre-computed outputs. The training instrument must match where the behavior is decided.">
+<meta property="og:title" content="When SFT and DPO could not teach 'don't drop the row'">
+<meta property="og:description" content="Five training cycles — SFT v0 through v3 and DPO v0 — all failed to lift stress data_preservation past 0.25. The structural reason: row preservation is a generation-time policy decision, and SFT/DPO supervise pre-computed outputs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Martian+Mono:wght@300;400&family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=Noto+Serif+SC:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg:          #f5f2eb;
+  --bg2:         #ede9df;
+  --ink:         #1c1a12;
+  --ink2:        rgba(28,26,18,0.72);
+  --ink3:        rgba(28,26,18,0.52);
+  --ink4:        rgba(28,26,18,0.25);
+  --accent:      #8b4513;
+  --accent-soft: rgba(139,69,19,0.09);
+  --accent-mid:  rgba(139,69,19,0.22);
+  --rule:        rgba(28,26,18,0.12);
+  --serif:       'Cormorant Garamond', Georgia, serif;
+  --mono:        'Martian Mono', 'Courier New', monospace;
+  --body:        'Lora', Georgia, serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.84;
+  min-height: 100vh;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.028'/%3E%3C/svg%3E");
+}
+
+/* ── Nav ── */
+nav.site-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 14px 2.5rem 15px;
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(245,242,235,0.93);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--rule);
+}
+.nav-mark {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-weight: 400;
+  font-style: normal;
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  transition: color 0.2s;
+}
+.nav-mark:hover { color: var(--accent); }
+.nav-links { display: flex; gap: 22px; }
+.nav-links a {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink2);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Layout ── */
+.paper-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 6.5rem 2rem 6rem;
+}
+
+/* ── Paper header ── */
+.paper-header {
+  margin-bottom: 2.5rem;
+  opacity: 0; transform: translateY(16px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.paper-header.visible { opacity: 1; transform: none; }
+
+.paper-title {
+  font-family: var(--serif);
+  font-size: clamp(1.75rem, 4vw, 2.4rem);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  margin-bottom: 1.25rem;
+}
+.paper-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink3);
+  letter-spacing: 0.04em;
+}
+.paper-meta .sep { color: var(--ink4); }
+.paper-meta a { color: var(--ink3); text-decoration: none; }
+.paper-meta a:hover { color: var(--accent); }
+
+.header-rule {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: 2rem 0 2.5rem;
+}
+
+/* ── Sections ── */
+.paper-section {
+  margin-bottom: 3.25rem;
+  opacity: 0; transform: translateY(14px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.paper-section.visible { opacity: 1; transform: none; }
+
+h2.section-heading {
+  font-family: var(--serif);
+  font-size: 1.42rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 1.3rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 0.5px solid var(--rule);
+}
+.section-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink3);
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+p { margin-bottom: 1rem; }
+p:last-child { margin-bottom: 0; }
+
+/* ── Code ── */
+code {
+  font-family: var(--mono);
+  font-size: 0.79em;
+  font-weight: 400;
+  background: rgba(28,26,18,0.07);
+  padding: 0.12em 0.42em;
+  border-radius: 3px;
+  color: var(--accent);
+  letter-spacing: 0.01em;
+}
+
+/* ── Callout ── */
+.callout {
+  border-left: 2px solid var(--accent-mid);
+  padding: 1rem 1.2rem 1rem 1.35rem;
+  margin: 1.75rem 0;
+  background: var(--accent-soft);
+  border-radius: 0 4px 4px 0;
+}
+.callout p { margin-bottom: 0.55rem; }
+.callout p:last-child { margin-bottom: 0; }
+
+/* ── Footer ── */
+footer {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.4rem 2rem 3rem;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink3);
+  letter-spacing: 0.10em;
+}
+footer a { color: var(--ink3); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+
+/* ── Utilities ── */
+em { font-style: italic; }
+strong { font-weight: 500; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── Mobile ── */
+@media (max-width: 600px) {
+  nav.site-nav { padding: 12px 1.5rem; }
+  .paper-container { padding: 5.5rem 1.2rem 4rem; }
+}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="/" class="nav-mark">Iris Axon Lab</a>
+  <div class="nav-links">
+    <a href="/posts/">Writing</a>
+    <a href="/projects/">Projects</a>
+    <a href="/notes/">Notes</a>
+  </div>
+</nav>
+
+<div class="paper-container">
+
+  <header class="paper-header">
+    <h1 class="paper-title">When SFT and DPO could not teach &ldquo;don&rsquo;t drop the row&rdquo;</h1>
+    <div class="paper-meta">
+      <span>Iris Shen</span>
+      <span class="sep">&middot;</span>
+      <span>April 2026</span>
+      <span class="sep">&middot;</span>
+      <a href="https://iris-axon-lab.github.io">iris-axon-lab.github.io</a>
+    </div>
+  </header>
+
+  <hr class="header-rule">
+
+  <!-- ── 0 ── intro / context -->
+  <section class="paper-section" id="s0">
+    <p style="font-style: italic; color: var(--ink2);">
+      This is the row-preservation chapter of a five-cycle training trajectory run on
+      <a href="https://github.com/iris-axon-lab/iris-ft-lab">iris-ft-lab</a>, a small Apple Silicon
+      fine-tuning lab. The harness it tests against is collab-eval, a document-task grader
+      documented in <a href="/builders/2026/04/25/collab-eval-builders-notes.html">collab-eval &mdash;
+      Reward Design for Document Tasks</a>. Across four SFT runs and one DPO run, none of which
+      promoted, the failure was specific and structural: SFT and DPO supervise pre-computed
+      outputs, but row preservation is a generation-time policy decision. The Knowing/Doing/Deciding
+      framing of this and the lab&rsquo;s other failures lives in
+      <a href="/builders/2026/04/28/failure-modes-knowing-doing-deciding.html">Knowing, Doing,
+      Deciding &mdash; applied to a fine-tuning lab</a>. This post is the trajectory-specific
+      narrative.
+    </p>
+  </section>
+
+  <!-- ── 1 ── -->
+  <section class="paper-section" id="s1">
+    <h2 class="section-heading"><span class="section-num">1</span>Why spreadsheet cleanup is a virtual-collaborator task</h2>
+
+    <p>Cleaning a messy CSV is what a human spreadsheet operator does &mdash; fix the units, drop the
+    annotation rows, normalize the headers, keep all the real data. It&rsquo;s one of the few document
+    tasks with a near-deterministic ground truth: rows in, rows out, units consistent. That makes
+    it a clean test bed for fine-tuning experiments. The collab-eval harness measures four
+    dimensions &mdash; <code>data_preservation</code>, <code>format_validity</code>, <code>unit_consistency</code>, <code>completeness</code> &mdash;
+    each with a hard-fail cap for catastrophic outputs. The promotion gate adds a fifth condition:
+    on a separate stress-eval split (15&ndash;25 row tables, all real data, gold preserves all rows),
+    <code>data_preservation</code> must reach 0.85.</p>
+  </section>
+
+  <!-- ── 2 ── -->
+  <section class="paper-section" id="s2">
+    <h2 class="section-heading"><span class="section-num">2</span>Why valid CSV can still be catastrophically wrong</h2>
+
+    <p>The most expensive failure isn&rsquo;t malformed output; it&rsquo;s well-formed output that quietly omits
+    real data. An adapter that produces clean CSV with <code>format_validity = 1.0</code> while dropping half
+    the rows scores <code>data_preservation = 0.5</code> &mdash; the exact &ldquo;reward hacking&rdquo; signature the harness
+    exists to detect. A virtual collaborator that crashes is recoverable; the user notices. A
+    virtual collaborator that silently drops rows is not &mdash; the user reads the clean output and
+    trusts it. This is why the harness&rsquo;s promotion gate is calibrated against the stress eval, not
+    the regular eval: a model that nails 80 short tables but drops half the rows on a 20-row table
+    is exactly the failure mode worth blocking.</p>
+  </section>
+
+  <!-- ── 3 ── -->
+  <section class="paper-section" id="s3">
+    <h2 class="section-heading"><span class="section-num">3</span>What SFT fixed: format and unit signals</h2>
+
+    <p>Four SFT runs (v0 mode-collapsed, v1 gentler recipe, v2 with 50% stress training data, v3
+    with curriculum learning) all lifted <code>unit_consistency</code> from 0.86 to 1.00. Format validity
+    stayed at 1.0. Composite stayed above 0.99. The pattern is consistent across the four runs:
+    SFT teaches what the gold demonstrates <em>literally</em> &mdash; every preserved gold output has converted
+    unit tokens, every preserved gold output has the right header. These are positive token-level
+    signals. The gradient flows; the model learns. Token-level supervision works for token-level
+    behaviors.</p>
+  </section>
+
+  <!-- ── 4 ── -->
+  <section class="paper-section" id="s4">
+    <h2 class="section-heading"><span class="section-num">4</span>What SFT could not fix: the generation boundary</h2>
+
+    <p>Across the four SFT runs, stress <code>data_preservation</code> was 0.20 &rarr; 0.25 &rarr; 0.25 &rarr; 0.25. Three
+    different interventions, identical outcome. The reason isn&rsquo;t the recipe (v1 was gentler), the
+    data quantity (v2 doubled stress cases), or the curriculum order (v3 trained stress-only first,
+    then mixed at lower LR). The reason is structural: &ldquo;preserve this row&rdquo; is a decision the model
+    makes during generation &mdash; to keep producing tokens past row 12 when context grows long and
+    termination becomes increasingly attractive &mdash; and SFT supervision never reaches that decision.
+    The gold has many tokens demonstrating &ldquo;convert to $K.&rdquo; The gold has <em>zero</em> tokens explicitly
+    demonstrating &ldquo;I am choosing to continue past this row.&rdquo; Preservation is the absence of a
+    deletion the model would otherwise produce. SFT cannot supervise an absence.</p>
+  </section>
+
+  <!-- ── 5 ── -->
+  <section class="paper-section" id="s5">
+    <h2 class="section-heading"><span class="section-num">5</span>What DPO learned too easily: fixed-output discrimination</h2>
+
+    <p>DPO v0 trained on 80 preference pairs &mdash; chosen = preserve all rows, rejected = drop a random
+    fraction. Loss collapsed to 0.001 by iter 30. Train accuracy 1.0. Final reward margin 7.7. By
+    every training metric the run was textbook. Stress <code>data_preservation</code> dropped to 0.20 &mdash;
+    <em>below</em> the SFT v3 baseline. DPO learned the discrimination (&ldquo;CSV with N rows beats CSV with
+    N&minus;k rows&rdquo;) trivially. But that discrimination is over pre-computed sequences. At inference
+    time, the model still has to decide whether to emit row 14 or stop. The DPO gradient sharpens
+    log-ratios over fixed outputs; it does not rewire generation-time decisions.</p>
+  </section>
+
+  <!-- ── 6 ── -->
+  <section class="paper-section" id="s6">
+    <h2 class="section-heading"><span class="section-num">6</span>Why I stop here</h2>
+
+    <p>The next standard instrument is reinforcement learning with the grader as reward: the model
+    rolls out a generation, the grader scores it, the policy gradient updates the generation-time
+    decision directly. That instrument lands at the right layer. I&rsquo;m not running it. The lesson
+    the trajectory has already taught &mdash; <em>the training instrument must match where the behavior is
+    decided</em> &mdash; is the result. Five experimental cycles produced one durable conclusion. Another
+    cycle would test how much an RL run improves preservation; it would not change the conclusion.
+    Five training runs, one durable result. The negative result is the contribution.</p>
+  </section>
+
+  <hr class="header-rule">
+
+  <p><em>Five training runs, one durable result. Repo: <a href="https://github.com/iris-axon-lab/iris-ft-lab">iris-axon-lab/iris-ft-lab</a>.</em></p>
+
+</div>
+
+<footer>
+  <span>&copy; Iris Shen &middot; <a href="/">iris-axon-lab.github.io</a></span>
+</footer>
+
+{% include site-footer.html %}
+
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  const header = document.querySelector('.paper-header');
+  if (header) setTimeout(() => header.classList.add('visible'), 60);
+
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.04 });
+
+  document.querySelectorAll('.paper-section').forEach(el => io.observe(el));
+});
+</script>
+
+</body>
+</html>

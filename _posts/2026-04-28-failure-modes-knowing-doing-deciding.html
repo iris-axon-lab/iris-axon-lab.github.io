@@ -1,0 +1,524 @@
+---
+layout: null
+title: "Knowing, Doing, Deciding — applied to a fine-tuning lab"
+date: 2026-04-28
+categories: [builders]
+description: "Fifteen catalogued failures from the iris-ft-lab fine-tuning lab map onto the Agent Epistemic Integrity Knowing/Doing/Deciding framework with a 6/3/6 split. Most pain accumulated at the upstream and downstream ends of the coupling chain. What that pattern says about training-instrument selection and trajectory-level evaluation."
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knowing, Doing, Deciding — applied to a fine-tuning lab · Builder's Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #19170f;
+    --surface:   #211f15;
+    --surface2:  #2a271a;
+    --border:    rgba(255,255,255,0.08);
+    --text:      #f0ead8;
+    --muted:     rgba(240,234,216,0.42);
+    --amber:     #d4a96a;
+    --amber-dim: rgba(212,169,106,0.18);
+    --indigo:    #8b82f6;
+    --indigo-dim:rgba(139,130,246,0.15);
+    --green:     #5ecf9e;
+    --red-soft:  #e8896a;
+    --serif:     'DM Serif Display', Georgia, serif;
+    --body:      'Source Serif 4', Georgia, serif;
+    --mono:      'IBM Plex Mono', 'Courier New', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    font-weight: 300;
+    font-size: 19.5px;
+    line-height: 1.72;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    opacity: 0.5;
+  }
+
+  .page { position: relative; z-index: 1; max-width: 780px; margin: 0 auto; padding: 4rem 2rem 6rem; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 1.1rem;
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .eyebrow::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--amber), transparent);
+    opacity: 0.4;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.4rem, 6vw, 3.8rem);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+  }
+  h1 em { font-style: italic; color: var(--amber); }
+
+  .tagline {
+    font-size: 17px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-bottom: 2.6rem;
+  }
+
+  h2 {
+    font-family: var(--serif);
+    font-size: 1.45rem;
+    font-weight: 400;
+    margin: 3.2rem 0 0.9rem;
+    display: flex; align-items: baseline; gap: 0.7rem;
+  }
+  h2 .n {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--amber);
+    letter-spacing: 0.12em;
+    padding: 2px 7px;
+    border: 1px solid var(--amber-dim);
+    border-radius: 3px;
+  }
+
+  p { margin-bottom: 1rem; color: rgba(240,234,216,0.86); }
+  a { color: var(--amber); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--text); }
+
+  .status-bar {
+    display: flex; flex-wrap: wrap; gap: 0.6rem;
+    margin: 1.6rem 0 2rem;
+  }
+  .pill {
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.06em;
+    padding: 4px 12px; border-radius: 20px;
+    border: 1px solid;
+  }
+  .pill.green  { color: var(--green);   border-color: rgba(94,207,158,0.3); background: rgba(94,207,158,0.07); }
+  .pill.amber  { color: var(--amber);   border-color: rgba(212,169,106,0.3); background: rgba(212,169,106,0.07); }
+  .pill.indigo { color: var(--indigo);  border-color: rgba(139,130,246,0.3); background: rgba(139,130,246,0.07); }
+  .pill.muted  { color: var(--muted);   border-color: rgba(255,255,255,0.1); }
+
+  .note-block {
+    border-left: 2px solid var(--amber);
+    padding: 0.4rem 1.2rem;
+    margin: 1.6rem 0;
+    color: var(--muted);
+    font-style: italic;
+    font-size: 17px;
+  }
+
+  .stack-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+    margin: 1rem 0;
+  }
+  .stack-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 1rem 1.1rem;
+  }
+  .stack-card .label { font-family: var(--mono); font-size: 13px; color: var(--amber); letter-spacing: 0.1em; margin-bottom: 0.3rem; }
+  .stack-card .val   { font-family: var(--mono); font-size: 15px; color: var(--text); }
+  @media (max-width: 520px) { .stack-row { grid-template-columns: 1fr 1fr; } }
+
+  /* ─── Reward decomposition table ───────────── */
+  .decomp-table {
+    width: 100%; border-collapse: collapse;
+    margin: 1.2rem 0;
+    font-family: var(--mono); font-size: 13.5px;
+  }
+  .decomp-table th {
+    text-align: left; padding: 0.5rem 0.8rem;
+    border-bottom: 1px solid rgba(212,169,106,0.3);
+    color: var(--amber); letter-spacing: 0.08em; font-weight: 500;
+  }
+  .decomp-table td {
+    padding: 0.55rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+    color: rgba(240,234,216,0.75);
+    vertical-align: top;
+  }
+  .decomp-table tr:last-child td { border-bottom: none; }
+  .tag-det  { color: var(--green);  }
+  .tag-llm  { color: var(--indigo); }
+  .tag-hard { color: var(--red-soft); }
+
+  /* ─── Failure mode explorer ────────────────── */
+  .explorer {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin: 1.4rem 0;
+    overflow: hidden;
+  }
+  .explorer-tabs {
+    display: flex; border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .explorer-tab {
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.06em;
+    padding: 0.7rem 1.1rem; cursor: pointer;
+    color: var(--muted); border-bottom: 2px solid transparent;
+    white-space: nowrap; background: none; border-top: none;
+    border-left: none; border-right: none;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .explorer-tab.active {
+    color: var(--amber);
+    border-bottom-color: var(--amber);
+  }
+  .explorer-tab:hover:not(.active) { color: var(--text); }
+
+  .explorer-panel {
+    display: none; padding: 1.6rem 1.8rem;
+  }
+  .explorer-panel.active { display: block; }
+
+  .ep-label {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--amber); margin-bottom: 0.4rem;
+  }
+  .ep-desc {
+    font-size: 16.5px; color: rgba(240,234,216,0.82);
+    margin-bottom: 1.4rem; line-height: 1.65;
+  }
+
+  .score-compare {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+    margin-top: 0.4rem;
+  }
+  .score-box {
+    border: 1px solid var(--border);
+    border-radius: 6px; padding: 1rem 1.1rem;
+  }
+  .score-box .sb-label {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em;
+    color: var(--muted); margin-bottom: 0.5rem;
+  }
+  .score-box .sb-score {
+    font-family: var(--mono); font-size: 2rem; font-weight: 500;
+    line-height: 1; margin-bottom: 0.4rem;
+  }
+  .score-box .sb-why {
+    font-size: 13.5px; color: var(--muted); line-height: 1.5;
+  }
+  .score-naive { border-color: rgba(232,137,106,0.2); background: rgba(232,137,106,0.04); }
+  .score-naive .sb-score { color: var(--red-soft); }
+  .score-harness { border-color: rgba(94,207,158,0.2); background: rgba(94,207,158,0.04); }
+  .score-harness .sb-score { color: var(--green); }
+
+  .ep-catch {
+    margin-top: 1.2rem; padding: 0.8rem 1rem;
+    background: var(--indigo-dim); border: 1px solid rgba(139,130,246,0.2);
+    border-radius: 5px;
+    font-family: var(--mono); font-size: 13px; color: rgba(240,234,216,0.75);
+    line-height: 1.6;
+  }
+  .ep-catch .catch-label { color: var(--indigo); font-weight: 500; margin-right: 0.5rem; }
+
+  @media (max-width: 520px) { .score-compare { grid-template-columns: 1fr; } }
+
+  /* ─── Boundary visualization ───────────────── */
+  .boundary-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+    background: var(--border); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden; margin: 1.2rem 0;
+  }
+  .bg-cell {
+    background: var(--surface); padding: 1.1rem 1.2rem;
+  }
+  .bg-cell .bg-head {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; margin-bottom: 0.6rem;
+  }
+  .bg-cell.det .bg-head { color: var(--green); }
+  .bg-cell.llm .bg-head { color: var(--indigo); }
+  .bg-item {
+    font-family: var(--mono); font-size: 13px; color: var(--muted);
+    padding: 0.2rem 0; display: flex; align-items: baseline; gap: 0.5rem;
+  }
+  .bg-item::before { content: '›'; opacity: 0.4; flex-shrink: 0; }
+  @media (max-width: 500px) { .boundary-grid { grid-template-columns: 1fr; } }
+
+  /* ─── Next list ────────────────────────────── */
+  .next-list { list-style: none; margin: 0.8rem 0; }
+  .next-list li {
+    display: flex; gap: 0.8rem; padding: 0.55rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 17px; color: rgba(240,234,216,0.8);
+    align-items: baseline;
+  }
+  .next-list li:last-child { border-bottom: none; }
+  .next-list .tag {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em;
+    padding: 2px 7px; border-radius: 3px; white-space: nowrap; flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .tag.now   { background: rgba(94,207,158,0.12);  color: var(--green);   border: 1px solid rgba(94,207,158,0.25); }
+  .tag.soon  { background: rgba(212,169,106,0.12); color: var(--amber);   border: 1px solid rgba(212,169,106,0.25); }
+  .tag.later { background: rgba(139,130,246,0.12); color: var(--indigo);  border: 1px solid rgba(139,130,246,0.25); }
+  .tag.done  { background: rgba(94,207,158,0.12);  color: var(--green);   border: 1px solid rgba(94,207,158,0.25); }
+  .tag.scope { background: rgba(255,255,255,0.06); color: var(--muted);   border: 1px solid rgba(255,255,255,0.12); font-size: 10px; }
+
+  /* ─── Footer ──────────────────────────────── */
+  .footer {
+    margin-top: 4rem; padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted);
+  }
+  .footer a { color: var(--amber); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  /* ─── Fade-in ──────────────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .page > * { animation: fadeUp 0.6s ease both; }
+  .page > *:nth-child(1) { animation-delay: 0.05s; }
+  .page > *:nth-child(2) { animation-delay: 0.12s; }
+  .page > *:nth-child(3) { animation-delay: 0.18s; }
+  .page > *:nth-child(n+4) { animation-delay: 0.24s; }
+
+  /* === Site navigation === */
+  .site-nav { display:flex; align-items:center; justify-content:space-between; padding:13px 0 15px; border-bottom:1px solid var(--border); margin-bottom:36px; }
+  .site-nav-home { font-weight:500; font-size:15px; color:var(--amber); text-decoration:none; letter-spacing:-.01em; font-family:var(--mono); }
+  .site-nav-links { display:flex; gap:22px; }
+  .site-nav-links a { font-size:14px; color:var(--muted); text-decoration:none; font-family:var(--mono); }
+  .site-nav-links a:hover { color:var(--text); }
+  .site-nav-home:hover { opacity:.8; }
+  .site-footer-nav { margin-top:40px; padding-top:14px; border-top:1px solid var(--border); font-size:12px; color:var(--muted); text-align:center; font-family:var(--mono); }
+  .site-footer-nav a { color:var(--muted); text-decoration:none; margin:0 4px; }
+  .site-footer-nav a:hover { color:var(--text); }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="site-nav">
+  <a class="site-nav-home" href="/">Iris Axon Lab</a>
+  <div class="site-nav-links">
+    <a href="/posts/">Writing</a>
+    <a href="/projects/">Projects</a>
+    <a href="/notes/">Notes</a>
+  </div>
+</nav>
+
+  <!-- Header -->
+  <div class="eyebrow">Builder's Notes &nbsp;·&nbsp; April 2026</div>
+
+  <h1>knowing, doing, deciding:<br><em>applied to a fine-tuning lab</em></h1>
+  <p class="tagline">15 failure modes · K/D/D framework · trajectory eval</p>
+
+  <div class="note-block" style="margin-top:1.4rem;">
+    Fifteen catalogued failures from a small Apple Silicon fine-tuning lab, mapped onto the
+    <a href="/writing/2026/04/15/agentic-epistemic-integrity-whitepaper.html">Agent Epistemic
+    Integrity</a> framework. The 6/3/6 split &mdash; six Knowing failures, three Doing, six
+    Deciding &mdash; is itself a finding: most pain accumulated at the upstream and downstream
+    ends of the coupling chain. This note steps back from the catalog to ask what the
+    pattern says about training-instrument selection and how
+    <a href="/writing/2026/04/24/trajectory-eval-taxonomy.html">trajectory-level eval</a>
+    extends to training trajectories themselves.
+  </div>
+
+  <!-- Section 01 -->
+  <h2><span class="n">01</span> The setup</h2>
+  <p>
+    The <a href="https://github.com/iris-axon-lab/iris-ft-lab">iris-ft-lab</a> repo is a small
+    Apple Silicon fine-tuning lab with two parallel tracks. Track A is Trace memory extraction
+    &mdash; a token-level schema-classification problem where SFT promoted from 0/12 to 9/12 on a
+    12-case gold eval and DPO took the result to 12/12 with no regressions. Track B is collab-eval
+    document tasks &mdash; a harness for spreadsheet cleanup, document revision, and citation grounding,
+    documented in <a href="/builders/2026/04/25/collab-eval-builders-notes.html">collab-eval &mdash; Reward
+    Design for Document Tasks</a>. Track B ran four SFT cycles and one DPO cycle. None promoted.
+  </p>
+  <p>
+    Across both tracks I catalogued fifteen distinct failures &mdash; the kind of bug that takes a
+    session each to diagnose and fix &mdash; in
+    <a href="https://github.com/iris-axon-lab/iris-ft-lab/blob/main/FAILURE_MODES.md"><code>FAILURE_MODES.md</code></a>.
+    This note steps back from the flat catalog and asks: what do those fifteen modes look like
+    through the Knowing/Doing/Deciding lens, and what does the pattern say about evaluating
+    long-running training trajectories?
+  </p>
+
+  <!-- Section 02 -->
+  <h2><span class="n">02</span> The framework, briefly</h2>
+  <p>
+    The <a href="/writing/2026/04/15/agentic-epistemic-integrity-whitepaper.html">Agent Epistemic
+    Integrity whitepaper</a> proposes three dimensions of runtime agent failure.
+    <strong>Knowing</strong> is belief management &mdash; what the agent holds true about the world,
+    itself, and its history. <strong>Doing</strong> is capability management &mdash; what cumulative
+    effects its actions have produced and what remains valid to invoke. <strong>Deciding</strong>
+    is planning and goal reasoning &mdash; how it selects and sequences actions given the prior two.
+  </p>
+  <p>
+    The three dimensions are coupled: stale beliefs drive invalid decisions, which produce
+    contradictory actions. The framework was developed for runtime agents, but the same coupling
+    structure shows up in any long-running iterative process &mdash; including the meta-trajectory of
+    building a training pipeline across many sessions.
+  </p>
+
+  <!-- Section 03 -->
+  <h2><span class="n">03</span> The fifteen modes mapped</h2>
+  <p>
+    Six of the lab&rsquo;s failures were <strong>Knowing</strong> failures: wrong beliefs about tools
+    (<code>mlx_lm fuse</code> silently no-ops on 4-bit weights without <code>--dequantize</code>),
+    about file states (stale shards conflicting with new ones after re-fuse), or about data quality
+    (gold consistently demonstrating row-deletion rather than preserve-and-convert across 147 of
+    240 cases).
+  </p>
+  <p>
+    Three were <strong>Doing</strong> failures: harness timeouts (Bash 10-min cap less than a
+    75-min training run), prompt orchestration assumptions (a YAML described in a code block but
+    never actually written to disk), recipe cumulative effects (rank &times; dropout &times; iters
+    compounding into mode collapse).
+  </p>
+  <p>
+    Six were <strong>Deciding</strong> failures: unreachable promotion gates (composite +0.10
+    from a 0.96 base), wall-time hypothesis errors (estimated by iters when seq&sup2; dominates),
+    and four interlocking modes documenting the cumulative exhaustion of two instrument families
+    on a single target dimension. The 6/3/6 split is itself a finding: most pain accumulated at
+    the upstream (Knowing) and downstream (Deciding) ends of the coupling chain, while Doing
+    failures were loud and one-session-bounded.
+  </p>
+
+  <!-- Section 04 -->
+  <h2><span class="n">04</span> How each dimension surfaces</h2>
+  <p>
+    Knowing failures are the hardest to detect because they don&rsquo;t surface as errors. The
+    <code>mlx_lm fuse</code> defect trained a numerically-perfect adapter (loss 0.693 &rarr; 0.001,
+    val accuracy 1.0, margin 7.8) on a meaningless foundation; only the &sect;4.1 hard-stop rule
+    &mdash; baseline must reproduce 9/12 on the gold eval &mdash; caught it. Without that floor the next
+    session would have iterated on &beta; and learning rate chasing a phantom DPO bug.
+  </p>
+  <p>
+    Doing failures are the loudest. The Bash 10-min cap returned <em>training done</em> while the
+    process was still running orphaned; once spotted, the fix was the <code>run_in_background</code>
+    polling pattern with an <code>until grep -q "Iter N:"</code> loop. Mode collapse during SFT v0
+    was visible from the first generated sample &mdash; outputs converged to <code>2444,1444,4444,4444</code>
+    by row 12. v1&rsquo;s gentler recipe (rank 4, dropout 0.05, fewer iters) fixed it in one cycle.
+  </p>
+  <p>
+    Deciding failures are the deepest. The cumulative-exhaustion verdict on row preservation
+    &mdash; three SFT recipes plus one DPO run, all flat at 0.25 stress <code>data_preservation</code>
+    &mdash; took five experimental cycles to surface. By the time the verdict landed, the right next
+    move was a class-level instrument switch, not within-class tuning. The companion writing post
+    <a href="/writing/2026/04/28/sft-dpo-row-preservation.html">When SFT and DPO could not teach
+    &ldquo;don&rsquo;t drop the row&rdquo;</a> walks the row-preservation trajectory in detail.
+  </p>
+
+  <!-- Section 05 -->
+  <h2><span class="n">05</span> Connection to trajectory-level eval</h2>
+  <p>
+    The <a href="/writing/2026/04/24/trajectory-eval-taxonomy.html">trajectory-eval taxonomy</a>
+    proposes five eval dimensions for long-running agents: epistemic drift rate (Knowing),
+    interruption and resumption fidelity (Doing), mid-task replanning quality (Deciding), goal
+    drift detection (Deciding), and multi-agent handoff fidelity (cross-cutting). Each maps to a
+    Knowing/Doing/Deciding dimension. A useful translation back to training trajectories: the
+    lab&rsquo;s five-condition promotion gate &mdash; composite no regression, dim no regression, RH-like
+    no increase, one dim improves &ge; 0.02, stress <code>data_preservation</code> &ge; 0.85
+    &mdash; is essentially trajectory-level evaluation. It catches what turn-level results-table
+    comparisons miss.
+  </p>
+  <p>
+    The bucket classification &mdash; A &ldquo;promoted&rdquo; / B &ldquo;with progress&rdquo; / C
+    &ldquo;with concern&rdquo; / D &ldquo;hypothesis refuted&rdquo; &mdash; emerged precisely because
+    binary turn-level PROMOTED/NOT-PROMOTED throws away the trajectory information. A flat metric
+    across multiple varied configurations <em>is</em> a trajectory signal, and naming it as one
+    ruled out three more weeks of within-class iteration.
+  </p>
+
+  <!-- Section 06 -->
+  <h2><span class="n">06</span> Training instruments through the K/D/D lens</h2>
+  <p>
+    Training-instrument selection has a Knowing/Doing/Deciding structure of its own. SFT positive
+    demonstrations operate on the Knowing layer &mdash; the model learns what tokens to emit given a
+    prompt, derived from gold sequences. DPO preference pairs operate on the Knowing layer with
+    discrimination &mdash; the model learns to assign higher likelihood to one fixed output than
+    another. Neither operates on the Doing layer, where per-step generation decisions are made.
+    RL with reward operates on Doing &mdash; rollout, observe, update.
+  </p>
+  <p>
+    The lab&rsquo;s row-preservation failure was a Doing-layer behavior with Knowing-layer instruments
+    applied; no amount of recipe tuning, data rebalancing, or curriculum ordering crossed that
+    gap. The eval-tightening direction follows the same structure: Knowing-instrument failures
+    need data audits and gate calibration; Doing-instrument failures need rollout-time
+    observability; Deciding failures need bucket classifications and cumulative-trajectory
+    tracking. None of this is novel individually. The framework gives a vocabulary for organizing
+    it.
+  </p>
+
+  <!-- Section 07 -->
+  <h2><span class="n">07</span> What&rsquo;s next</h2>
+  <p>
+    Two threads worth pulling, neither in this iteration. <em>One:</em> extend the
+    trajectory-eval taxonomy to training trajectories explicitly. The lab already has the patterns
+    &mdash; promotion gates, bucket classifications, cumulative flat-metric signaling &mdash; but they&rsquo;re
+    scattered across four collab-eval reports and a <code>FAILURE_MODES.md</code> catalog. A
+    second-pass writing post unifying them as &ldquo;trajectory-level eval for training&rdquo; is
+    the natural follow-on to the original turn-level-vs-trajectory taxonomy.
+  </p>
+  <p>
+    <em>Two:</em> try the missing instrument. Row preservation as an RL-with-grader experiment
+    is a small Mac-feasible run &mdash; 80&ndash;200 rollouts per update, the existing harness as the
+    reward, KL-anchored at v3 SFT. The result would either confirm the lab&rsquo;s diagnosis (RL
+    crosses the Knowing/Doing gap; preservation lifts above 0.25) or surface a deeper structural
+    issue (the grader itself rewards the wrong policy). Either outcome would close the loop on
+    the negative-result trajectory documented here. I&rsquo;m not running it now &mdash; the catalog is
+    already the contribution &mdash; but the experimental hypothesis is well-defined enough that
+    &ldquo;open question&rdquo; is a clean handoff state.
+  </p>
+  <p style="margin-top:2rem; font-style:italic; color: var(--muted);">
+    Five training cycles, fifteen failure modes, three dimensions. The framework was already
+    there; the lab made it concrete.
+  </p>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span>iris-axon-lab &nbsp;·&nbsp; April 2026 &nbsp;·&nbsp; public</span>
+    <span>
+      <a href="https://github.com/iris-axon-lab/iris-ft-lab/tree/main/collab-eval" target="_blank">github.com/iris-axon-lab/iris-ft-lab</a>
+    </span>
+  </div>
+
+</div><!-- .page -->
+
+<script>
+function showCase(idx) {
+  document.querySelectorAll('.explorer-panel').forEach((p, i) => {
+    p.classList.toggle('active', i === idx);
+  });
+  document.querySelectorAll('.explorer-tab').forEach((t, i) => {
+    t.classList.toggle('active', i === idx);
+  });
+}
+</script>
+
+{% include site-footer.html %}
+
+</body>
+</html>
