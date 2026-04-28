@@ -397,9 +397,10 @@ description: "Builder's notes for collab-eval — a task environment and grader 
   <h2><span class="n">02</span> What the harness does</h2>
   <p>
     <code>collab-eval</code> provides three runnable task environments, a deterministic grader layer, an
-    optional LLM-as-judge layer, and a composite grader with hard-fail caps. It is an evaluation and
-    environment harness — there is no training loop in the repo. The <a href="https://github.com/iris-axon-lab/iris-ft-lab/blob/main/collab-eval/docs/rl_env_design.md">design note</a>
-    covers how it would extend to one.
+    optional LLM-as-judge layer, and a composite grader with hard-fail caps. collab-eval began as an
+    evaluation and environment harness. The repo now also contains the measured SFT/DPO trajectory
+    described in §§08–10. The <a href="https://github.com/iris-axon-lab/iris-ft-lab/blob/main/collab-eval/docs/rl_env_design.md">design note</a>
+    covers how it would extend to an RL loop.
   </p>
 
   <div class="stack-row">
@@ -645,9 +646,10 @@ description: "Builder's notes for collab-eval — a task environment and grader 
     </li>
     <li>
       <span class="tag soon">soon</span>
-      Wire the harness to a small RL loop using GRPO or similar — not for training a useful
-      model, but to observe empirically where the harness breaks down under optimization pressure.
-      The adversarial cases predict the failure modes; a real training run would confirm them.
+      Wire the harness to a small RL loop using GRPO or similar. SFT and DPO already ran (five
+      cycles; none promoted — see §09); RL with grader-as-reward is the natural next instrument
+      for the row-preservation problem. It is intentionally out of scope for this iteration of
+      the lab, but remains a well-formed open question for future work.
     </li>
     <li>
       <span class="tag soon">soon</span>
