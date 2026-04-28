@@ -200,11 +200,11 @@ footer a:hover { color: var(--accent); }
     <div class="project-item">
       <div class="project-header">
         <div class="project-title">
-          <a href="/builders/2026/04/25/collab-eval-builders-notes.html">collab-eval — Reward Design for Document Tasks ↗</a>
+          <a href="/builders/2026/04/25/collab-eval-builders-notes.html">Collab-Eval — Reward Design for Document Tasks ↗</a>
         </div>
         <span class="project-era">Personal · 2026</span>
       </div>
-      <p class="project-desc">A runnable grader harness for open-ended document tasks — document revision, spreadsheet cleanup, and citation grounding — designed to expose reward-design failure modes before an RL training run exists. Decomposed scoring with hard-fail caps prevents naive optimization and gaming. Current artifact: deterministic eval suite, 35 scored cases, base composite 0.67. An RL checkpoint and LLM-judge calibration are the next milestones. Code: <a href="https://github.com/iris-axon-lab/iris-ft-lab/tree/main/collab-eval" target="_blank" rel="noopener noreferrer">iris-ft-lab/collab-eval ↗</a>.</p>
+      <p class="project-desc">A runnable grader and training lab for open-ended document tasks — document revision, spreadsheet cleanup, and citation grounding. It started as a reward-design harness and now includes a five-cycle training trajectory: SFT v0–v3 and DPO v0 on spreadsheet row preservation. None promoted; the result is a negative finding about instrument mismatch — SFT/DPO over precomputed outputs did not reach a generation-time row-preservation policy. Code: <a href="https://github.com/iris-axon-lab/iris-ft-lab/tree/main/collab-eval" target="_blank" rel="noopener noreferrer">iris-ft-lab/collab-eval ↗</a> · <a href="/builders/2026/04/25/collab-eval-builders-notes.html">Builder note</a> · <a href="/builders/2026/04/28/failure-modes-knowing-doing-deciding.html">Failure modes</a> · <a href="/writing/2026/04/28/sft-dpo-row-preservation.html">Row-preservation writeup</a></p>
     </div>
 
     <div class="project-item">
@@ -212,15 +212,31 @@ footer a:hover { color: var(--accent); }
         <div class="project-title">
           <a href="https://github.com/iris-axon-lab/trace" target="_blank">Trace — Longitudinal Witness Agent ↗</a>
         </div>
-        <span class="project-era">Personal · 2026–present</span>
+        <span class="project-era">Personal · 2026</span>
       </div>
       <p class="project-desc">A local-first longitudinal agent that reads AI conversation history and generates weekly narrative dispatches. Runs entirely on Ollama (qwen3:14b). Succeeds only when you feel witnessed — never when a task is completed. The design question it answers: what does memory look like when the goal is not recall but becoming?</p>
     </div>
 
     <div class="project-item">
       <div class="project-header">
+        <div class="project-title"><a href="https://github.com/iris-axon-lab/iris-ft-lab" target="_blank" rel="noopener noreferrer">Memory-as-Policy ↗</a> </div>
+        <span class="project-era">Personal · 2026</span>
+      </div>
+      <p class="project-desc">Encoding memory retrieval and generation behavior as learned policy rather than prompted behavior. First promoted result in <a href="https://github.com/iris-axon-lab/iris-ft-lab" target="_blank" rel="noopener noreferrer">iris-ft-lab</a> (Track A): SFT + DPO on Trace Layer 2 memory extraction — classifying episodic, semantic, procedural, and prospective tiers from raw trace text — reaching 12/12 on the gold eval. The hard case was aspiration-vs-commitment; 80 synthetic DPO preference pairs resolved all residual SFT errors with no regressions. Next: extending policy learning to memory retrieval preferences and generation constraints across longer Trace sessions.</p>
+    </div>
+
+    <div class="project-item">
+      <div class="project-header">
+        <div class="project-title">Long-Running Task Evaluation</div>
+        <span class="project-era">Microsoft M365 Copilot · 2026–present</span>
+      </div>
+      <p class="project-desc">Evaluation frameworks for agents that operate across sessions rather than single ones. Two artifacts: a <a href="/writing/2026/04/24/trajectory-eval-taxonomy.html">trajectory-level eval taxonomy</a> that classifies failures by when in the task arc they occur (not just whether the final output is correct), and an <a href="/writing/2026/04/15/agentic-epistemic-integrity-whitepaper.html">epistemic integrity framework</a> for what agents should know, commit to, and be uncertain about across the session-to-long-running transition.</p>
+    </div>
+
+    <div class="project-item">
+      <div class="project-header">
         <div class="project-title">
-          <a href="/writing/2026/02/01/two-stage-memory-architecture.html">Agentic Memory Architecture ↗</a> 
+          <a href="/writing/2026/02/01/two-stage-memory-architecture.html">Agentic Memory Architecture ↗</a>
         </div>
         <span class="project-era">Microsoft M365 Copilot · 2025–present</span>
       </div>
@@ -253,14 +269,6 @@ footer a:hover { color: var(--accent); }
         <span class="project-era">Microsoft Research · prior</span>
       </div>
       <p class="project-desc">Built knowledge graphs at billion-node scale for academic literature. Adopted by the OECD and the Stanford AI Index as infrastructure for science-of-science research. Learned that knowledge representation is never just a data problem — it is always also a question of what you think knowledge is. More selected works: <a href="https://aclanthology.org/P18-4015.pdf" target="_blank" rel="noopener noreferrer">A web-scale scientific taxonomy</a>; <a href="https://www.frontiersin.org/journals/big-data/articles/10.3389/fdata.2019.00045/full" target="_blank" rel="noopener noreferrer">Science-of-science studies</a>.</p>
-    </div>
-
-    <div class="project-item">
-      <div class="project-header">
-        <div class="project-title">Memory-as-Policy</div>
-        <span class="project-era">Personal research · 2025–present</span>
-      </div>
-      <p class="project-desc">Exploring preference optimization approaches — DPO, GRPO, and RLAIF — on small open-weight models to encode memory retrieval and generation behavior as learned policy rather than prompted behavior. Ongoing.</p>
     </div>
 
   </div>
